@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Butterfly API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #191A19;
+            color: #D8E9A8;
+            overflow-x: hidden;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #4E9F3D;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #4E9F3D;
+            animation: transferData 4s linear infinite;
+        }
+
+        @keyframes transferData {
+            0% { transform: translate(0, 0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+
+        .grid-line {
+            position: absolute;
+            background: rgba(78, 159, 61, 0.1);
+        }
+
+        .grid-line.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-line.vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #4E9F3D, #D8E9A8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 10px #4E9F3D); }
+            50% { filter: drop-shadow(0 0 20px #4E9F3D); }
+        }
+
+        .tech-stack {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-badge {
+            background: rgba(30, 81, 40, 0.5);
+            border: 1px solid #4E9F3D;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .tech-badge:nth-child(1) { animation-delay: 0.1s; }
+        .tech-badge:nth-child(2) { animation-delay: 0.2s; }
+        .tech-badge:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        .docs-button {
+            background: linear-gradient(135deg, #1E5128, #4E9F3D);
+            color: #D8E9A8;
+            border: none;
+            padding: 12px 30px;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 3rem;
+        }
+
+        .docs-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(78, 159, 61, 0.4);
+        }
+
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 3rem;
+        }
+
+        .process-box {
+            background: rgba(30, 81, 40, 0.3);
+            border: 2px solid #1E5128;
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .process-box:hover {
+            transform: translateY(-5px);
+            border-color: #4E9F3D;
+            box-shadow: 0 10px 30px rgba(78, 159, 61, 0.3);
+        }
+
+        .process-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(78, 159, 61, 0.3);
+        }
+
+        .process-icon {
+            font-size: 1.8rem;
+        }
+
+        .process-title {
+            font-weight: bold;
+            color: #D8E9A8;
+            font-size: 1.1rem;
+        }
+
+        .process-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #4E9F3D;
+            margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4E9F3D;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 5px #4E9F3D; }
+            50% { opacity: 0.5; box-shadow: 0 0 15px #4E9F3D; }
+        }
+
+        .process-content {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #D8E9A8;
+            opacity: 0.9;
+        }
+
+        .message-log {
+            background: rgba(25, 26, 25, 0.8);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 12px;
+            font-size: 0.75rem;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            opacity: 0;
+            animation: logAppear 0.3s ease-out forwards;
+        }
+
+        @keyframes logAppear {
+            to { opacity: 1; }
+        }
+
+        .log-time {
+            color: #1E5128;
+        }
+
+        .log-msg {
+            color: #4E9F3D;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(30, 81, 40, 0.5);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1E5128, #4E9F3D);
+            border-radius: 3px;
+            animation: progress 3s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+
+        .socket-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            background: #4E9F3D;
+            border-radius: 50%;
+            animation: socketPulse 1.5s infinite;
+        }
+
+        @keyframes socketPulse {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(78, 159, 61, 0.7);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(1.2);
+                box-shadow: 0 0 0 10px rgba(78, 159, 61, 0);
+            }
+        }
+
+        .architecture-section {
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            color: #D8E9A8;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .architecture-flow {
+            background: rgba(30, 81, 40, 0.2);
+            border: 2px solid #1E5128;
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .flow-layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .flow-layer:last-child {
+            margin-bottom: 0;
+        }
+
+        .flow-node {
+            background: rgba(30, 81, 40, 0.6);
+            border: 2px solid #4E9F3D;
+            border-radius: 12px;
+            padding: 15px 25px;
+            min-width: 150px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .flow-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(78, 159, 61, 0.4);
+            border-color: #D8E9A8;
+        }
+
+        .flow-node-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .flow-node-title {
+            font-weight: bold;
+            color: #D8E9A8;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+
+        .flow-node-desc {
+            font-size: 0.75rem;
+            color: #D8E9A8;
+            opacity: 0.7;
+        }
+
+        .flow-arrow-down {
+            font-size: 2rem;
+            color: #4E9F3D;
+            animation: arrowBounce 2s infinite;
+            display: block;
+            text-align: center;
+            margin: -10px 0;
+        }
+
+        @keyframes arrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
+        .layer-label {
+            font-size: 0.85rem;
+            color: #4E9F3D;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-terminal {
+            background: rgba(25, 26, 25, 0.95);
+            border: 2px solid #1E5128;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #1E5128;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .code-line {
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: typeLine 0.5s ease-out forwards;
+        }
+
+        .code-line:nth-child(1) { animation-delay: 0.5s; }
+        .code-line:nth-child(2) { animation-delay: 0.7s; }
+        .code-line:nth-child(3) { animation-delay: 0.9s; }
+        .code-line:nth-child(4) { animation-delay: 1.1s; }
+        .code-line:nth-child(5) { animation-delay: 1.3s; }
+        .code-line:nth-child(6) { animation-delay: 1.5s; }
+
+        @keyframes typeLine {
+            to { opacity: 1; }
+        }
+
+        .keyword { color: #4E9F3D; }
+        .string { color: #D8E9A8; }
+        .comment { color: #1E5128; }
+        .function { color: #4E9F3D; font-weight: bold; }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(30, 81, 40, 0.3);
+            border: 1px solid #4E9F3D;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: bold;
+            color: #4E9F3D;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            color: #D8E9A8;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            .process-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .code-terminal {
+                padding: 15px;
+            }
+
+            .process-box {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background" id="background"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">🦋 Studio Butterfly API</div>
+            <div class="tech-stack">
+                <div class="tech-badge">Node.js</div>
+                <div class="tech-badge">NestJS</div>
+                <div class="tech-badge">TypeScript</div>
+            </div>
+        </div>
+
+        <a href="https://api.studiobutterfly.io/api" target="_blank" class="docs-button">
+            📚 API Documentation →
+        </a>
+        <div class="code-terminal">
+            <div class="terminal-header">
+                <div class="terminal-dot dot-red"></div>
+                <div class="terminal-dot dot-yellow"></div>
+                <div class="terminal-dot dot-green"></div>
+            </div>
+            <div class="code-line"><span class="comment">// NestJS WebSocket Gateway</span></div>
+            <div class="code-line"><span class="keyword">@WebSocketGateway</span>()</div>
+            <div class="code-line"><span class="keyword">export class</span> <span class="function">EventsGateway</span> {</div>
+            <div class="code-line">  <span class="keyword">@SubscribeMessage</span>(<span class="string">'events'</span>)</div>
+            <div class="code-line">  <span class="function">handleEvent</span>(<span class="keyword">@MessageBody</span>() data: <span class="keyword">string</span>) {</div>
+            <div class="code-line">    <span class="keyword">return</span> { <span class="string">event</span>: <span class="string">'response'</span>, <span class="string">data</span> };</div>
+            <div class="code-line">  }</div>
+            <div class="code-line">}</div>
+        </div>
+
+        <div class="metrics">
+            
+            <div class="metric-card">
+                <div class="metric-value" id="requests">247</div>
+                <div class="metric-label">Requests/sec</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">24ms</div>
+                <div class="metric-label">Avg Response</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">99.9%</div>
+                <div class="metric-label">Uptime</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="activeConn">32</div>
+                <div class="metric-label">Active Conn.</div>
+            </div>
+        </div>
+
+
+        <div class="process-grid">
+            <div class="process-box">
+                <div class="socket-indicator"></div>
+                <div class="process-header">
+                    <span class="process-icon">🔌</span>
+                    <span class="process-title">WebSocket Server</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Active Connections: <span id="wsCount">12</span></span>
+                </div>
+                <div class="process-content">
+                    Real-time bidirectional communication for live updates and event streaming
+                </div>
+                <div class="message-log" id="wsLog"></div>
+            </div>
+
+            <div class="process-box">
+                <div class="process-header">
+                    <span class="process-icon">⚙️</span>
+                    <span class="process-title">Background Jobs</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Queue: <span id="queueCount">8</span> tasks</span>
+                </div>
+                <div class="process-content">
+                    Async task processing with job queues for heavy computations and scheduled operations
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="process-box">
+                <div class="socket-indicator"></div>
+                <div class="process-header">
+                    <span class="process-icon">💾</span>
+                    <span class="process-title">Database Pool</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Connections: <span id="dbPool">15/20</span></span>
+                </div>
+                <div class="process-content">
+                    Optimized connection pooling for high-performance database operations
+                </div>
+                <div class="message-log" id="dbLog"></div>
+            </div>
+
+            <div class="process-box">
+                <div class="process-header">
+                    <span class="process-icon">🔄</span>
+                    <span class="process-title">Cache Layer</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Hit Rate: <span id="cacheHit">94.2%</span></span>
+                </div>
+                <div class="process-content">
+                    Redis-based caching for ultra-fast data retrieval and session management
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="animation-duration: 2s;"></div>
+                </div>
+            </div>
+
+            <div class="process-box">
+                <div class="socket-indicator"></div>
+                <div class="process-header">
+                    <span class="process-icon">📡</span>
+                    <span class="process-title">Event Bus</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Events/sec: <span id="eventsPerSec">156</span></span>
+                </div>
+                <div class="process-content">
+                    Microservices communication via event-driven architecture
+                </div>
+                <div class="message-log" id="eventLog"></div>
+            </div>
+
+            <div class="process-box">
+                <div class="process-header">
+                    <span class="process-icon">🛡️</span>
+                    <span class="process-title">Auth Service</span>
+                </div>
+                <div class="process-status">
+                    <span class="status-dot"></span>
+                    <span>Active Sessions: <span id="sessions">243</span></span>
+                </div>
+                <div class="process-content">
+                    JWT-based authentication with role-based access control and token refresh
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="animation-duration: 4s;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="architecture-section">
+            <div class="section-title">🏗️ NestJS Architecture Flow</div>
+            <div class="architecture-flow">
+                <div class="layer-label">→ Incoming Request</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">📨</span>
+                        <div class="flow-node-title">HTTP Request</div>
+                        <div class="flow-node-desc">Client sends request</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow-down">↓</div>
+
+                <div class="layer-label">→ Middleware Layer</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">🔐</span>
+                        <div class="flow-node-title">Auth Guard</div>
+                        <div class="flow-node-desc">JWT Validation</div>
+                    </div>
+                    <div class="flow-node">
+                        <span class="flow-node-icon">🛡️</span>
+                        <div class="flow-node-title">Validation Pipe</div>
+                        <div class="flow-node-desc">DTO Validation</div>
+                    </div>
+                    <div class="flow-node">
+                        <span class="flow-node-icon">⚡</span>
+                        <div class="flow-node-title">Rate Limiter</div>
+                        <div class="flow-node-desc">Throttling</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow-down">↓</div>
+
+                <div class="layer-label">→ Controller Layer</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">🎯</span>
+                        <div class="flow-node-title">Controller</div>
+                        <div class="flow-node-desc">Route Handler</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow-down">↓</div>
+
+                <div class="layer-label">→ Service Layer</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">⚙️</span>
+                        <div class="flow-node-title">Business Logic</div>
+                        <div class="flow-node-desc">Service Methods</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow-down">↓</div>
+
+                <div class="layer-label">→ Data Layer</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">💾</span>
+                        <div class="flow-node-title">Repository</div>
+                        <div class="flow-node-desc">Database Access</div>
+                    </div>
+                    <div class="flow-node">
+                        <span class="flow-node-icon">🔄</span>
+                        <div class="flow-node-title">Cache</div>
+                        <div class="flow-node-desc">Redis Layer</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow-down">↓</div>
+
+                <div class="layer-label">→ Response</div>
+                <div class="flow-layer">
+                    <div class="flow-node">
+                        <span class="flow-node-icon">📤</span>
+                        <div class="flow-node-title">JSON Response</div>
+                        <div class="flow-node-desc">Formatted output</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const bg = document.getElementById('background');
+
+        // Create grid lines
+        for (let i = 0; i < 20; i++) {
+            const hLine = document.createElement('div');
+            hLine.className = 'grid-line horizontal';
+            hLine.style.top = (i * 5) + '%';
+            bg.appendChild(hLine);
+
+            const vLine = document.createElement('div');
+            vLine.className = 'grid-line vertical';
+            vLine.style.left = (i * 5) + '%';
+            bg.appendChild(vLine);
+        }
+
+        // Create data packets
+        function createDataPacket() {
+            const packet = document.createElement('div');
+            packet.className = 'data-packet';
+            
+            const startX = Math.random() * 200 - 100;
+            const startY = Math.random() * window.innerHeight;
+            const endX = window.innerWidth + Math.random() * 200;
+            const endY = Math.random() * window.innerHeight;
+            
+            packet.style.left = startX + 'px';
+            packet.style.top = startY + 'px';
+            packet.style.setProperty('--tx', (endX - startX) + 'px');
+            packet.style.setProperty('--ty', (endY - startY) + 'px');
+            packet.style.animationDelay = Math.random() * 2 + 's';
+            
+            bg.appendChild(packet);
+            setTimeout(() => packet.remove(), 4000);
+        }
+
+        setInterval(createDataPacket, 300);
+
+        // WebSocket log simulation
+        const wsMessages = ['Client connected', 'Heartbeat received', 'Event emitted', 'Data synced'];
+        const wsLog = document.getElementById('wsLog');
+        
+        function addWsLog() {
+            const msg = wsMessages[Math.floor(Math.random() * wsMessages.length)];
+            const time = new Date().toLocaleTimeString();
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${msg}</span>`;
+            wsLog.appendChild(logLine);
+            
+            if (wsLog.children.length > 5) {
+                wsLog.removeChild(wsLog.firstChild);
+            }
+        }
+
+        setInterval(addWsLog, 3000);
+
+        // DB log simulation
+        const dbMessages = ['Query executed', 'Transaction committed', 'Connection pooled', 'Index optimized'];
+        const dbLog = document.getElementById('dbLog');
+        
+        function addDbLog() {
+            const msg = dbMessages[Math.floor(Math.random() * dbMessages.length)];
+            const time = new Date().toLocaleTimeString();
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${msg}</span>`;
+            dbLog.appendChild(logLine);
+            
+            if (dbLog.children.length > 5) {
+                dbLog.removeChild(dbLog.firstChild);
+            }
+        }
+
+        setInterval(addDbLog, 4000);
+
+        // Event log simulation
+        const eventMessages = ['UserCreated', 'OrderPlaced', 'PaymentProcessed', 'EmailSent'];
+        const eventLog = document.getElementById('eventLog');
+        
+        function addEventLog() {
+            const msg = eventMessages[Math.floor(Math.random() * eventMessages.length)];
+            const time = new Date().toLocaleTimeString();
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${msg}</span>`;
+            eventLog.appendChild(logLine);
+            
+            if (eventLog.children.length > 5) {
+                eventLog.removeChild(eventLog.firstChild);
+            }
+        }
+
+        setInterval(addEventLog, 2500);
+
+        // Animate metrics
+        setInterval(() => {
+            document.getElementById('requests').textContent = Math.floor(Math.random() * 500) + 100;
+            document.getElementById('activeConn').textContent = Math.floor(Math.random() * 50) + 10;
+            document.getElementById('wsCount').textContent = Math.floor(Math.random() * 30) + 5;
+            document.getElementById('queueCount').textContent = Math.floor(Math.random() * 15) + 3;
+            document.getElementById('eventsPerSec').textContent = Math.floor(Math.random() * 200) + 50;
+            document.getElementById('sessions').textContent = Math.floor(Math.random() * 300) + 150;
+        }, 2000);
+    </script>
+</body>
+</html>

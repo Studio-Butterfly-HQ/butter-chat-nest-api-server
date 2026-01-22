@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { UserModule } from './modules/user/user.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { CompanyModule } from './modules/company/company.module';
@@ -23,12 +21,18 @@ import { Message } from './modules/messenger-factory/entities/message.entity';
 import { ConversationTag } from './modules/messenger-factory/entities/conversation-tag.entity';
 import { ConversationSummary } from './modules/messenger-factory/entities/conversation-summary.entity';
 import { MetaBusinessModule } from './modules/meta_business_connection/meta-business.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
      ConfigModule.forRoot({
       isGlobal:true,
      }),
+     ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/',
+    }),
      TypeOrmModule.forRootAsync({
       imports:[ConfigModule],
       useFactory:(configService: ConfigService)=>({
@@ -64,7 +68,7 @@ import { MetaBusinessModule } from './modules/meta_business_connection/meta-busi
     //MessengerBullMQProducerModule,
     MetaBusinessModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
