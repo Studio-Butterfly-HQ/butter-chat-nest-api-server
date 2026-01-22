@@ -1,7 +1,4 @@
-import { 
-  Controller, Get, Post, Query, Body, Res, 
-  BadRequestException, ForbiddenException, Session 
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import type { Response } from 'express';
@@ -15,305 +12,120 @@ export class MetaBusinessController {
     private readonly configService: ConfigService,
   ) {}
 
-  // =========================
-  // WEBHOOK VERIFICATION
-  // =========================
   @Get('webhook')
   verifyWebhook(
     @Query('hub.mode') mode: string,
     @Query('hub.verify_token') token: string,
     @Query('hub.challenge') challenge: string,
   ) {
-    const verifyToken = this.configService.get<string>("META_WEB_HOOK_VERIFY_TOKEN");
-    
-    if (mode === 'subscribe' && token === verifyToken) {
-      console.log('Webhook verified successfully');
+    if (mode === 'subscribe' && token === this.configService.get<string>("META_WEB_HOOK_VERIFY_TOKEN")) {
       return challenge;
     }
-    
-    console.error('Webhook verification failed');
     throw new ForbiddenException('Webhook verification failed');
   }
 
+  /**
+   * Webhook events receiver
+   */
   @Post('webhook')
   handleWebhook(@Body() body: any) {
     console.log('WEBHOOK EVENT:', JSON.stringify(body, null, 2));
 
-    // Process webhook events here as needed
-    
+    // Always return 200
     return 'EVENT_RECEIVED';
   }
-
-  // =========================
-  // USER LOGIN - OAuth Flow
-  // =========================
+  // BUSINESS LOGIN (OAuth)
   @Get('login')
-  login(@Res() res: Response, @Session() session: any) {
+  login(@Res() res: Response) {
     const appId = this.configService.get<string>('META_APP_ID');
-    const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-    
-    if (!appId || !redirectUri) {
-      throw new BadRequestException('META_APP_ID and META_REDIRECT_URI must be configured');
-    }
-    
-    // Generate and store state for CSRF protection
-    const state = crypto.randomBytes(32).toString('hex');
-    
-    // Store state in session for validation
-    if (session) {
-      session.oauthState = state;
-    }
-
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_posts',
-      'pages_manage_engagement',
-      'pages_messaging',
-      'pages_manage_metadata',
-      'public_profile',
-      'email',
-    ].join(',');
+    const redirectUri =
+      this.configService.get<string>('META_REDIRECT_URI') ||
+      'https://api.studiobutterfly.io/auth/meta/callback';
+    const configId = this.configService.get<string>('META_CONFIG_ID');
+    const state = crypto.randomBytes(16).toString('hex');
 
     const url =
-      `https://www.facebook.com/v24.0/dialog/oauth?` +
-      `client_id=${appId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code` +
-      `&scope=${scopes}` +
-      `&state=${state}` +
-      `&auth_type=rerequest`; // Forces permission dialog
+  `https://www.facebook.com/dialog/oauth?` +
+  `client_id=${appId}` +
+  `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+  `&response_type=code` +
+  `&scope=pages_manage_engagement,pages_show_list,pages_manage_posts,pages_messaging` +
+  (configId ? `&config_id=${configId}` : '') +
+  `&state=${state}`;
 
-    console.log('Redirecting to Facebook OAuth');
+
+    console.log('Redirecting to Facebook Login URL:', url);
     return res.redirect(url);
   }
 
-  // =========================
   // OAUTH CALLBACK
-  // =========================
   @Get('callback')
-  async callback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Query('error_reason') errorReason: string,
-    @Query('error_description') errorDescription: string,
-    @Session() session: any,
-    @Res() res: Response,
-  ) {
-    // Handle user denial
-    if (error) {
-      console.error('OAuth Error:', error, errorReason, errorDescription);
-      return res.redirect(`/auth/meta/error?message=${encodeURIComponent(errorDescription || 'Access denied')}`);
-    }
+  async callback(@Query('code') code: string) {
+    if (!code) throw new BadRequestException('Authorization code missing');
 
-    if (!code) {
-      throw new BadRequestException('Authorization code missing');
-    }
+    const appId = this.configService.get<string>('META_APP_ID')!;
+    const appSecret = this.configService.get<string>('META_APP_SECRET')!;
+    const redirectUri = this.configService.get<string>('META_REDIRECT_URI')!;
 
-    // Validate state (CSRF protection)
-    if (session && session.oauthState !== state) {
-      console.error('State mismatch - possible CSRF attack');
-      throw new ForbiddenException('Invalid state parameter');
-    }
+    // Step A: Exchange code for short-lived token
+    const tokenRes = await axios.get(`${this.GRAPH}/oauth/access_token`, {
+      params: {
+        client_id: appId,
+        client_secret: appSecret,
+        redirect_uri: redirectUri,
+        code,
+      },
+    });
 
-    const appId = this.configService.get<string>('META_APP_ID');
-    const appSecret = this.configService.get<string>('META_APP_SECRET');
-    const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
+    const shortLivedToken = tokenRes.data.access_token;
 
-    if (!appId || !appSecret || !redirectUri) {
-      throw new BadRequestException('META credentials not configured');
-    }
+    // Step B: Convert to long-lived token
+    const longTokenRes = await axios.get(`${this.GRAPH}/oauth/access_token`, {
+      params: {
+        grant_type: 'fb_exchange_token',
+        client_id: appId,
+        client_secret: appSecret,
+        fb_exchange_token: shortLivedToken,
+      },
+    });
 
-    try {
-      // Step 1: Exchange code for short-lived token
-      const tokenRes = await axios.get(`${this.GRAPH}/oauth/access_token`, {
-        params: {
-          client_id: appId,
-          client_secret: appSecret,
-          redirect_uri: redirectUri,
-          code,
-        },
-      });
+    const longLivedToken = longTokenRes.data.access_token;
 
-      const shortLivedToken = tokenRes.data.access_token;
+    // TODO: Save longLivedToken in your DB per client
 
-      // Step 2: Convert to long-lived token (60 days)
-      const longTokenRes = await axios.get(`${this.GRAPH}/oauth/access_token`, {
-        params: {
-          grant_type: 'fb_exchange_token',
-          client_id: appId,
-          client_secret: appSecret,
-          fb_exchange_token: shortLivedToken,
-        },
-      });
-
-      const longLivedUserToken = longTokenRes.data.access_token;
-      const expiresIn = longTokenRes.data.expires_in; // ~5184000 seconds (60 days)
-
-      // Step 3: Get user info
-      const userRes = await axios.get(`${this.GRAPH}/me`, {
-        params: {
-          access_token: longLivedUserToken,
-          fields: 'id,name,email,picture',
-        },
-      });
-
-      const user = userRes.data;
-
-      // Step 4: Get user's pages with tokens
-      const pagesRes = await axios.get(`${this.GRAPH}/me/accounts`, {
-        params: {
-          access_token: longLivedUserToken,
-          fields: 'id,name,access_token,category,link,about,fan_count,tasks,instagram_business_account',
-        },
-      });
-
-      const pages = pagesRes.data.data || [];
-
-      console.log(`User ${user.name} authenticated with ${pages.length} pages`);
-
-      // Return authentication data
-      const authData = {
-        success: true,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          picture: user.picture?.data?.url,
-        },
-        userToken: longLivedUserToken,
-        expiresIn: expiresIn,
-        expiresAt: new Date(Date.now() + expiresIn * 1000),
-        pages: pages.map(page => ({
-          pageId: page.id,
-          pageName: page.name,
-          pageToken: page.access_token,
-          category: page.category,
-          link: page.link,
-          about: page.about,
-          fanCount: page.fan_count,
-          permissions: page.tasks,
-          instagramId: page.instagram_business_account?.id,
-        })),
-      };
-
-      // Clear session state
-      if (session) {
-        delete session.oauthState;
-      }
-
-      // You can either return JSON or redirect to frontend
-      // Option 1: Return JSON (for API calls)
-      // return authData;
-      
-      // Option 2: Redirect with data (for web flow)
-      // Make sure it returns proper JSON response:
-      return res.json({
-        success: true,
-        message: 'Authentication successful!',
-        data: authData
-      });
-
-    } catch (error: any) {
-      console.error('OAuth Callback Error:', error.response?.data || error.message);
-      const errorMsg = error.response?.data?.error?.message || 'Authentication failed';
-      return res.redirect(`/auth/meta/error?message=${encodeURIComponent(errorMsg)}`);
-    }
+    return {
+      message: 'Business connected successfully',
+    };
   }
 
+
+
+
+  //................................................................................................................../
   // =========================
-  // GET PAGES (for authenticated users)
+  // GET PAGES
   // =========================
   @Get('pages')
   async getPages(@Query('user_token') userToken: string) {
-    if (!userToken) {
-      throw new BadRequestException('User token required');
-    }
+    if (!userToken) throw new BadRequestException('User token required');
 
     try {
       const res = await axios.get(`${this.GRAPH}/me/accounts`, {
-        params: {
-          access_token: userToken,
-          fields: 'id,name,access_token,category,link,about,fan_count,tasks,instagram_business_account',
-        },
+        params: { access_token: userToken },
       });
 
-      const pages = res.data.data || [];
-
-      if (pages.length === 0) {
-        console.warn('No pages found for this user');
-      }
-
-      return {
-        success: true,
-        count: pages.length,
-        pages: pages.map((p: any) => ({
-          pageId: p.id,
-          pageName: p.name,
-          pageToken: p.access_token,
-          category: p.category,
-          link: p.link,
-          about: p.about,
-          fanCount: p.fan_count,
-          permissions: p.tasks,
-          instagramAccount: p.instagram_business_account,
-        })),
-      };
+      return res.data.data.map((p: any) => ({
+        pageId: p.id,
+        pageName: p.name,
+        pageToken: p.access_token, // Use this for all page actions
+        category: p.category,
+        link: p.link,
+        about: p.about || p.description || null,
+        fanCount: p.fan_count || null,
+      }));
     } catch (err: any) {
-      console.error('Get Pages Error:', err.response?.data || err.message);
-      
-      // Check if token is expired
-      if (err.response?.data?.error?.code === 190) {
-        throw new ForbiddenException('Token expired. Please re-authenticate.');
-      }
-      
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch pages'
-      );
-    }
-  }
-
-  // =========================
-  // REFRESH USER TOKEN
-  // =========================
-  @Post('token/refresh')
-  async refreshToken(@Body() body: { user_token: string }) {
-    if (!body.user_token) {
-      throw new BadRequestException('User token required');
-    }
-
-    const appId = this.configService.get<string>('META_APP_ID');
-    const appSecret = this.configService.get<string>('META_APP_SECRET');
-
-    if (!appId || !appSecret) {
-      throw new BadRequestException('META credentials not configured');
-    }
-
-    try {
-      const res = await axios.get(`${this.GRAPH}/oauth/access_token`, {
-        params: {
-          grant_type: 'fb_exchange_token',
-          client_id: appId,
-          client_secret: appSecret,
-          fb_exchange_token: body.user_token,
-        },
-      });
-
-      const newToken = res.data.access_token;
-      const expiresIn = res.data.expires_in;
-
-      return {
-        success: true,
-        accessToken: newToken,
-        expiresIn: expiresIn,
-        expiresAt: new Date(Date.now() + expiresIn * 1000),
-      };
-    } catch (err: any) {
-      console.error('Token Refresh Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to refresh token'
-      );
+      console.error(err.response?.data || err.message);
+      throw new BadRequestException('Failed to fetch pages');
     }
   }
 
@@ -324,49 +136,30 @@ export class MetaBusinessController {
   async getPosts(
     @Query('page_id') pageId: string,
     @Query('page_token') pageToken: string,
-    @Query('limit') limit?: string,
   ) {
-    if (!pageId || !pageToken) {
+    if (!pageId || !pageToken)
       throw new BadRequestException('Page ID and Page token required');
-    }
+    const postsRes = await axios.get(`${this.GRAPH}/${pageId}/posts`, {
+      params: {
+        fields: 'id,message,full_picture,created_time',
+        access_token: pageToken,
+      },
+    });
 
-    try {
-      const postsRes = await axios.get(`${this.GRAPH}/${pageId}/posts`, {
+    const posts = postsRes.data.data || [];
+
+    // Add comments
+    for (const post of posts) {
+      const commentsRes = await axios.get(`${this.GRAPH}/${post.id}/comments`, {
         params: {
-          fields: 'id,message,full_picture,created_time,permalink_url,likes.summary(true),comments.summary(true),shares',
+          fields: 'from{name},message,created_time',
           access_token: pageToken,
-          limit: limit ? parseInt(limit) : 25,
         },
       });
-
-      const posts = postsRes.data.data || [];
-
-      // Optionally fetch comments for each post
-      for (const post of posts) {
-        if (post.comments?.summary?.total_count > 0) {
-          const commentsRes = await axios.get(`${this.GRAPH}/${post.id}/comments`, {
-            params: {
-              fields: 'id,from{name,id},message,created_time,like_count',
-              access_token: pageToken,
-              limit: 10,
-            },
-          });
-          post.commentsList = commentsRes.data.data || [];
-        }
-      }
-
-      return {
-        success: true,
-        count: posts.length,
-        posts: posts,
-        paging: postsRes.data.paging,
-      };
-    } catch (err: any) {
-      console.error('Get Posts Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch posts'
-      );
+      post.comments = commentsRes.data.data || [];
     }
+
+    return posts;
   }
 
   // =========================
@@ -374,400 +167,156 @@ export class MetaBusinessController {
   // =========================
   @Post('page/post')
   async postToPage(
-    @Body() body: {
-      page_id: string;
-      page_token: string;
-      message: string;
-      link?: string;
-      published?: boolean;
-    },
+    @Body() body: { page_id: string; page_token: string; message: string },
   ) {
-    if (!body.page_id || !body.page_token || !body.message) {
+    if (!body.page_id || !body.page_token || !body.message)
       throw new BadRequestException('Page ID, Page token, and message are required');
-    }
 
-    try {
-      const params: any = {
+    const res = await axios.post(`${this.GRAPH}/${body.page_id}/feed`, null, {
+      params: {
         message: body.message,
         access_token: body.page_token,
-        published: body.published !== false, // Default to true
-      };
+      },
+    });
 
-      if (body.link) {
-        params.link = body.link;
-      }
-
-      const res = await axios.post(`${this.GRAPH}/${body.page_id}/feed`, null, {
-        params,
-      });
-
-      return {
-        success: true,
-        postId: res.data.id,
-        data: res.data,
-      };
-    } catch (err: any) {
-      console.error('Post to Page Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to create post'
-      );
-    }
+    return res.data;
   }
 
   // =========================
   // SEND MESSENGER MESSAGE
   // =========================
-  @Post('message/send')
-  async sendMessage(
-    @Body() body: {
-      page_id: string;
-      page_token: string;
-      recipient_id: string;
-      text: string;
+@Post('message/send')
+async sendMessage(
+    @Body()
+    body: {
+        page_id: string;
+        page_token: string;
+        recipient_id: string;
+        text: string;
     },
-  ) {
-    if (!body.page_token || !body.recipient_id || !body.text) {
-      throw new BadRequestException('Page token, recipient ID, and text required');
-    }
+) {
+    if (!body.page_token || !body.recipient_id || !body.text)
+        throw new BadRequestException('Page token, recipient ID, and text required');
 
-    try {
-      const res = await axios.post(
-        `${this.GRAPH}/${body.page_id}/messages`,
+    const res = await axios.post(
+        `${this.GRAPH}/${body.page_id}/messages`, // ← Changed from /me/messages
         {
-          recipient: { id: body.recipient_id },
-          message: { text: body.text },
-          messaging_type: 'RESPONSE', // or 'UPDATE', 'MESSAGE_TAG'
+            recipient: { id: body.recipient_id },
+            message: { text: body.text },
         },
         { params: { access_token: body.page_token } },
-      );
+    );
 
-      return {
-        success: true,
-        messageId: res.data.message_id,
-        recipientId: res.data.recipient_id,
-      };
-    } catch (err: any) {
-      console.error('Send Message Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to send message'
-      );
-    }
-  }
+    return res.data;
+}
 
   // =========================
-  // GET PAGE CONVERSATIONS
+  // GET PAGE CONVERSATIONS (optional)
   // =========================
   @Get('page/conversations')
-  async getConversations(
-    @Query('page_id') pageId: string,
-    @Query('page_token') pageToken: string,
-  ) {
-    if (!pageId || !pageToken) {
+  async getConversations(@Query('page_id') pageId: string, @Query('page_token') pageToken: string) {
+    if (!pageId || !pageToken)
       throw new BadRequestException('Page ID and Page token required');
-    }
 
-    try {
-      const res = await axios.get(`${this.GRAPH}/${pageId}/conversations`, {
-        params: {
-          access_token: pageToken,
-          fields: 'id,senders,updated_time,message_count,unread_count',
-          limit: 50,
-        },
-      });
+    const res = await axios.get(`${this.GRAPH}/${pageId}/conversations`, {
+      params: {
+        access_token: pageToken,
+        fields: 'id,senders,updated_time,message_count',
+      },
+    });
 
-      return {
-        success: true,
-        conversations: res.data.data || [],
-        paging: res.data.paging,
-      };
-    } catch (err: any) {
-      console.error('Get Conversations Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch conversations'
-      );
-    }
+    return res.data.data || [];
   }
-
-  @Get('conversation/messages')
-  async getConversationMessages(
-    @Query('conversation_id') conversationId: string,
-    @Query('page_token') pageToken: string,
-  ) {
-    if (!conversationId || !pageToken) {
-      throw new BadRequestException('Conversation ID and Page token required');
-    }
-
-    try {
-      const res = await axios.get(`${this.GRAPH}/${conversationId}/messages`, {
-        params: {
-          access_token: pageToken,
-          fields: 'id,message,from,created_time,attachments',
-          limit: 100,
-        },
-      });
-
-      return {
-        success: true,
-        messages: res.data.data || [],
-        paging: res.data.paging,
-      };
-    } catch (err: any) {
-      console.error('Get Messages Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch messages'
-      );
-    }
-  }
-
-  // =========================
-  // DEBUG TOKEN
-  // =========================
-  @Get('debug/token')
-  async debugToken(@Query('token') token: string) {
-    if (!token) {
-      throw new BadRequestException('Token required');
-    }
-
-    const appId = this.configService.get<string>('META_APP_ID');
-    const appSecret = this.configService.get<string>('META_APP_SECRET');
-    const appToken = `${appId}|${appSecret}`;
-
-    try {
-      const res = await axios.get(`${this.GRAPH}/debug_token`, {
-        params: {
-          input_token: token,
-          access_token: appToken,
-        },
-      });
-
-      return {
-        success: true,
-        data: res.data.data,
-      };
-    } catch (err: any) {
-      console.error('Debug Token Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to debug token'
-      );
-    }
-  }
-
-  // =========================
-  // SUBSCRIBE PAGE TO WEBHOOKS
-  // =========================
-  @Post('page/subscribe')
-  async subscribePage(@Body() body: { page_id: string; page_token: string }) {
-    if (!body.page_id || !body.page_token) {
+  @Get('page/conversations/messages')
+  async getConversationMessages(@Query('page_id') pageId: string, @Query('page_token') pageToken: string,) {
+    if (!pageId || !pageToken)
       throw new BadRequestException('Page ID and Page token required');
-    }
 
-    try {
-      const subRes = await axios.post(
-        `${this.GRAPH}/${body.page_id}/subscribed_apps`,
-        null,
-        {
-          params: {
-            subscribed_fields: [
-              'messages',
-              'messaging_postbacks',
-              'messaging_optins',
-              'message_deliveries',
-              'message_reads',
-              'feed',
-              'mention',
-            ].join(','),
-            access_token: body.page_token,
-          },
-        },
-      );
-
-      return {
-        success: true,
-        subscription: subRes.data,
-      };
-    } catch (error: any) {
-      console.error('=== SUBSCRIPTION ERROR ===');
-      console.error('Status:', error.response?.status);
-      console.error('Error:', JSON.stringify(error.response?.data, null, 2));
-
-      return {
-        success: false,
-        error: error.response?.data || error.message,
-        status: error.response?.status,
-      };
-    }
+    const res = await axios.get(`${this.GRAPH}/${pageId}/conversations`, {
+      params: {
+        access_token: pageToken,
+        fields: 'id,senders,updated_time,message_count,messages{message,from,created_time}'
+      },
+    });
+    return res.data.data || [];
   }
 
-  // =========================
-  // GET USER INFO
-  // =========================
   @Get('user/info')
-  async getUserInfo(@Query('user_access_token') userAccessToken: string) {
-    if (!userAccessToken) {
-      throw new BadRequestException('User access token required');
-    }
-
-    try {
-      const res = await axios.get(`${this.GRAPH}/me`, {
-        params: {
-          access_token: userAccessToken,
-          fields: 'id,name,email,picture',
-        },
-      });
-
-      return {
-        success: true,
-        user: res.data,
-      };
-    } catch (err: any) {
-      console.error('Get User Info Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch user info'
-      );
-    }
+  async getUserInfo(@Query('user_access_token') userAccessToken:string){
+          const res = await axios.get(`https://graph.facebook.com/v24.0/me`, {
+      params: {
+        access_token: userAccessToken,
+        fields: 'id,name,email'
+      },
+    });
+    return res.data || [];
   }
 
-  // =========================
-  // DELETE POST
-  // =========================
-  @Post('page/post/delete')
-  async deletePost(
-    @Body() body: { post_id: string; page_token: string },
-  ) {
-    if (!body.post_id || !body.page_token) {
-      throw new BadRequestException('Post ID and Page token required');
-    }
-
-    try {
-      const res = await axios.delete(`${this.GRAPH}/${body.post_id}`, {
-        params: {
-          access_token: body.page_token,
-        },
-      });
-
-      return {
-        success: true,
-        data: res.data,
-      };
-    } catch (err: any) {
-      console.error('Delete Post Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to delete post'
-      );
-    }
-  }
-
-  // =========================
-  // REPLY TO COMMENT
-  // =========================
-  @Post('page/comment/reply')
-  async replyToComment(
-    @Body() body: {
-      comment_id: string;
-      page_token: string;
-      message: string;
-    },
-  ) {
-    if (!body.comment_id || !body.page_token || !body.message) {
-      throw new BadRequestException('Comment ID, Page token, and message required');
-    }
-
-    try {
-      const res = await axios.post(
-        `${this.GRAPH}/${body.comment_id}/comments`,
-        null,
-        {
+  @Get('debug/token')
+  async debugToken(@Query('page_token') pageToken: string) {
+      const res = await axios.get(`${this.GRAPH}/debug_token`, {
           params: {
-            message: body.message,
-            access_token: body.page_token,
-          },
-        },
-      );
-
-      return {
-        success: true,
-        commentId: res.data.id,
-      };
-    } catch (err: any) {
-      console.error('Reply to Comment Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to reply to comment'
-      );
-    }
-  }
-
-  // =========================
-  // GET PAGE INSIGHTS (Analytics)
-  // =========================
-  @Get('page/insights')
-  async getPageInsights(
-    @Query('page_id') pageId: string,
-    @Query('page_token') pageToken: string,
-    @Query('metric') metric?: string,
-  ) {
-    if (!pageId || !pageToken) {
-      throw new BadRequestException('Page ID and Page token required');
-    }
-
-    const defaultMetrics = [
-      'page_impressions',
-      'page_impressions_unique',
-      'page_engaged_users',
-      'page_post_engagements',
-      'page_fans',
-      'page_fan_adds',
-      'page_fan_removes',
-    ];
-
-    try {
-      const res = await axios.get(`${this.GRAPH}/${pageId}/insights`, {
-        params: {
-          metric: metric || defaultMetrics.join(','),
-          access_token: pageToken,
-          period: 'day',
-        },
+              input_token: pageToken,
+              access_token: pageToken
+          }
       });
-
-      return {
-        success: true,
-        insights: res.data.data || [],
-      };
-    } catch (err: any) {
-      console.error('Get Insights Error:', err.response?.data || err.message);
-      throw new BadRequestException(
-        err.response?.data?.error?.message || 'Failed to fetch insights'
-      );
-    }
+      return res.data;
   }
 
-  // // =========================
-  // // VERIFY APP SETUP
-  // // =========================
-  // @Get('verify/setup')
-  // async verifySetup() {
-  //   const appId = this.configService.get<string>('META_APP_ID');
-  //   const appSecret = this.configService.get<string>('META_APP_SECRET');
-  //   const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-  //   const webhookToken = this.configService.get<string>('META_WEB_HOOK_VERIFY_TOKEN');
+@Post('page/subscribe')
+async subscribePage(
+    @Body() body: { page_id: string; page_token: string }
+) {
+    console.log('Attempting to subscribe page:', body.page_id);
+    
+    try {
+        // First, check current subscriptions
+        const checkRes = await axios.get(
+            `${this.GRAPH}/${body.page_id}/subscribed_apps`,
+            {
+                params: { 
+                    access_token: body.page_token 
+                }
+            }
+        );
+        
+        console.log('Currently subscribed apps:', JSON.stringify(checkRes.data, null, 2));
 
-  //   return {
-  //     success: true,
-  //     config: {
-  //       appId: appId ? '✓ Set' : '✗ Missing',
-  //       appSecret: appSecret ? '✓ Set' : '✗ Missing',
-  //       redirectUri: redirectUri || '✗ Missing',
-  //       webhookToken: webhookToken ? '✓ Set' : '✗ Missing',
-  //     },
-  //     endpoints: {
-  //       login: '/auth/meta/login',
-  //       callback: '/auth/meta/callback',
-  //       webhook: '/auth/meta/webhook',
-  //       pages: '/auth/meta/pages',
-  //       posts: '/auth/meta/page/posts',
-  //       createPost: '/auth/meta/page/post',
-  //       sendMessage: '/auth/meta/message/send',
-  //       conversations: '/auth/meta/page/conversations',
-  //     },
-  //   };
-  // }
+        // Subscribe the app
+        const subRes = await axios.post(
+            `${this.GRAPH}/${body.page_id}/subscribed_apps`,
+            null,
+            {
+                params: {
+                    subscribed_fields: 'messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads',
+                    access_token: body.page_token
+                }
+            }
+        );
+
+        console.log('Subscription response:', JSON.stringify(subRes.data, null, 2));
+
+        return {
+            success: true,
+            subscription: subRes.data,
+            currentSubscriptions: checkRes.data
+        };
+    } catch (error: any) {
+        // Better error logging
+        console.error('=== SUBSCRIPTION ERROR ===');
+        console.error('Status:', error.response?.status);
+        console.error('Status Text:', error.response?.statusText);
+        console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+        console.error('Error Message:', error.message);
+        console.error('Full Error:', error);
+        
+        return {
+            success: false,
+            error: error.response?.data || error.message,
+            status: error.response?.status
+        };
+    }
 }
+}
+
+//'https://hal-prescribable-tatiana.ngrok-free.dev/auth/meta/page/callback'
