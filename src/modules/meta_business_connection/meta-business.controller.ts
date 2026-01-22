@@ -90,11 +90,12 @@ export class MetaBusinessController {
     });
 
     const longLivedToken = longTokenRes.data.access_token;
-
+    
     // TODO: Save longLivedToken in your DB per client
 
     return {
       message: 'Business connected successfully',
+      token:longLivedToken
     };
   }
 
