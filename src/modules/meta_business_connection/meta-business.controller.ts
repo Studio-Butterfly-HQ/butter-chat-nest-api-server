@@ -208,7 +208,7 @@ export class MetaBusinessController {
       // return authData;
       
       // Option 2: Redirect with data (for web flow)
-      return res.redirect(`/dashboard?success=true&pages=${pages.length}`);
+      return {"data":authData};
 
     } catch (error: any) {
       console.error('OAuth Callback Error:', error.response?.data || error.message);
