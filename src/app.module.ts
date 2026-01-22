@@ -22,6 +22,7 @@ import { Conversation } from './modules/messenger-factory/entities/coversation.e
 import { Message } from './modules/messenger-factory/entities/message.entity';
 import { ConversationTag } from './modules/messenger-factory/entities/conversation-tag.entity';
 import { ConversationSummary } from './modules/messenger-factory/entities/conversation-summary.entity';
+import { MetaBusinessModule } from './modules/meta_business_connection/meta-business.module';
 
 @Module({
   imports: [
@@ -60,7 +61,8 @@ import { ConversationSummary } from './modules/messenger-factory/entities/conver
      MailModule, 
      FileHandleModule,
      MessengerFactoryModule,
-    //MessengerBullMQProducerModule
+    //MessengerBullMQProducerModule,
+    MetaBusinessModule
   ],
   controllers: [AppController],
   providers: [AppService],
