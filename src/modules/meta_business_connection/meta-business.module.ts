@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { MetaBusinessController } from './meta-business.controller';
 
 @Module({
-  controllers: [MetaBusinessModule],
+  controllers: [MetaBusinessControllrer],
   providers: [],
 })
 export class MetaBusinessModule {}

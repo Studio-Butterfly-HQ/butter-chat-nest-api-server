@@ -4,7 +4,7 @@ import axios from 'axios';
 import type { Response } from 'express';
 
 @Controller('auth/meta/')
-export class MetaBusinessControllre {
+export class MetaBusinessController {
   private readonly GRAPH = 'https://graph.facebook.com/v24.0';
 
   constructor(
