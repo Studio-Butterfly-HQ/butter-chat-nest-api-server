@@ -47,7 +47,7 @@ export class MetaBusinessController {
   `client_id=${appId}` +
   `&redirect_uri=${encodeURIComponent(redirectUri)}` +
   `&response_type=code` +
-  `&scope=business_management,pages_show_list,pages_manage_posts,pages_messaging` +
+  `&scope=pages_manage_engagement,pages_show_list,pages_manage_posts,pages_messaging` +
   (configId ? `&config_id=${configId}` : '') +
   `&state=secure_state`;
 
