@@ -95,7 +95,6 @@ export class MetaBusinessController {
 
     return {
       message: 'Business connected successfully',
-      token: longLivedToken,
     };
   }
 
