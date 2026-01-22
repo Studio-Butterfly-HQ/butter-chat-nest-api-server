@@ -2,6 +2,7 @@ import { Controller, Get, Post, Query, Body, Res, BadRequestException, Forbidden
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import type { Response } from 'express';
+import * as crypto from 'crypto';
 
 @Controller('auth/meta/')
 export class MetaBusinessController {
@@ -41,6 +42,7 @@ export class MetaBusinessController {
       this.configService.get<string>('META_REDIRECT_URI') ||
       'https://api.studiobutterfly.io/auth/meta/callback';
     const configId = this.configService.get<string>('META_CONFIG_ID');
+    const state = crypto.randomBytes(16).toString('hex');
 
     const url =
   `https://www.facebook.com/dialog/oauth?` +
@@ -49,7 +51,7 @@ export class MetaBusinessController {
   `&response_type=code` +
   `&scope=pages_manage_engagement,pages_show_list,pages_manage_posts,pages_messaging` +
   (configId ? `&config_id=${configId}` : '') +
-  `&state=secure_state`;
+  `&state=${state}`;
 
 
     console.log('Redirecting to Facebook Login URL:', url);
