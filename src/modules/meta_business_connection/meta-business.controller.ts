@@ -39,7 +39,7 @@ export class MetaBusinessControllre {
     const appId = this.configService.get<string>('META_APP_ID');
     const redirectUri =
       this.configService.get<string>('META_REDIRECT_URI') ||
-      'https://api.studiobutterfly.io/api/auth/meta/callback';
+      'https://api.studiobutterfly.io/auth/meta/callback';
     const configId = this.configService.get<string>('META_CONFIG_ID');
 
     const url =
@@ -138,8 +138,6 @@ export class MetaBusinessControllre {
   ) {
     if (!pageId || !pageToken)
       throw new BadRequestException('Page ID and Page token required');
-    // pageId = "965782683278439"
-    // pageToken = "EAA7dofaqr5cBQYImNHPrYKJTxhZC7dZCJEyp2dBcSwZBU9Py4boqL9cNs9KyX8bOLVyYgV1Ak4Up3qkzBDFwSy7nfxZCHoDeYvIkZA8s58O4qokEkVf6kZBphAsTCSRZBOmVx6GYBRFig3ZB9qsc0csFtB3JJPqjZABbeXkbJZCmwwdZC9VvZBgEuUmWi9WBf1KDufz4XrnOaZCNs"
     const postsRes = await axios.get(`${this.GRAPH}/${pageId}/posts`, {
       params: {
         fields: 'id,message,full_picture,created_time',
