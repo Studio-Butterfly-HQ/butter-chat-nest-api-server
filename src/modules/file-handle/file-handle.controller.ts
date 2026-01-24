@@ -1,25 +1,44 @@
-import { Controller,Post,UseInterceptors, UploadedFile, ParseFilePipe} from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, ParseFilePipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
 @Controller('file-handle')
 export class FileHandleController {
   constructor() {}
 
   @Post('image/avatar')
+  @ApiOperation({ summary: 'Upload company logo/avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor('avatar'))
-  create(
-    @UploadedFile
-    (
-       new ParseFilePipe({
-        validators:[
-          //new FileTypeValidator({fileType:'image'})
+  uploadAvatar(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // new FileTypeValidator({ fileType: 'image' })
         ],
         fileIsRequired: true,
-       })
+      })
     )
-    file: Express.Multer.File) {
-    console.log(file.filename)
-    console.log(file)
-    return file.path
+    file: Express.Multer.File
+  ) {
+    // Return the full URL instead of just the path
+    const fileUrl = `/avatars/${file.filename}`;
+    
+    return {
+      filename: file.filename,
+      url: fileUrl,
+      path: file.path,
+    };
   }
 }

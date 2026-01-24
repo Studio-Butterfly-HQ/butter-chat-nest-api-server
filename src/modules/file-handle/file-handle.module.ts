@@ -26,5 +26,6 @@ import { FileHandleController } from './file-handle.controller';
   ],
   controllers: [FileHandleController],
   providers: [],
+  
 })
 export class FileHandleModule {}
