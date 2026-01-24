@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, Up
 import { User } from '../../user/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
 import { MetaData } from 'src/common/entity/meta-data';
+import { SocialConnection } from 'src/modules/meta_business_connection/entity/social-connection.entity';
 
 export enum CompanyStatus {
   ACTIVE = 'ACTIVE',
@@ -57,4 +58,7 @@ export class Company extends MetaData {
 
   @OneToMany(() => Department, department => department.company)
   departments: Department[];
+
+  @OneToMany(() => SocialConnection, socialConnection => socialConnection.company)
+  socialConnections: SocialConnection[];
 }

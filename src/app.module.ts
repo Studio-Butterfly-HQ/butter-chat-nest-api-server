@@ -23,6 +23,7 @@ import { ConversationSummary } from './modules/messenger-factory/entities/conver
 import { MetaBusinessModule } from './modules/meta_business_connection/meta-business.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { SocialConnection } from './modules/meta_business_connection/entity/social-connection.entity';
 
 @Module({
   imports: [
@@ -44,9 +45,10 @@ import { join } from 'path';
          database:configService.get('DB_DATABASE'),
          entities:[
           Company,User,Department,UserDepartment,PasswordResetToken,
-          Conversation,Message,ConversationTag,ConversationSummary
+          Conversation,Message,ConversationTag,ConversationSummary,
+          SocialConnection 
         ],
-         //synchronize:true,
+        synchronize:true,
          //logging:true
       }),
       inject:[ConfigService]

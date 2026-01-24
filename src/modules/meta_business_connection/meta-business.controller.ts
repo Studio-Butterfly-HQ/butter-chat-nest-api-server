@@ -1,67 +1,58 @@
 import { 
   Controller, Get, Post, Query, Body, Res, 
-  BadRequestException, ForbiddenException, Session 
+  BadRequestException, ForbiddenException, Session, 
+  UseGuards,
+  Req
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import type { Response } from 'express';
 import * as crypto from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { SocialConnection } from './entity/social-connection.entity';
+import { Repository } from 'typeorm';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
-@Controller('auth/meta/')
+@ApiTags('auth/meta')
+@Controller('auth/meta')
 export class MetaBusinessController {
-  private readonly GRAPH = 'https://graph.facebook.com/v24.0';
+  private readonly GRAPH = 'https://graph.facebook.com/v21.0';
 
   constructor(
+    @InjectRepository(SocialConnection)
+    private socialConnectionRepo: Repository<SocialConnection>,
     private readonly configService: ConfigService,
   ) {}
 
-  // =========================
-  // WEBHOOK VERIFICATION
-  // =========================
-  @Get('webhook')
-  verifyWebhook(
-    @Query('hub.mode') mode: string,
-    @Query('hub.verify_token') token: string,
-    @Query('hub.challenge') challenge: string,
-  ) {
-    const verifyToken = this.configService.get<string>("META_WEB_HOOK_VERIFY_TOKEN");
-    
-    if (mode === 'subscribe' && token === verifyToken) {
-      console.log('Webhook verified successfully');
-      return challenge;
-    }
-    
-    console.error('Webhook verification failed');
-    throw new ForbiddenException('Webhook verification failed');
-  }
-
-  @Post('webhook')
-  handleWebhook(@Body() body: any) {
-    console.log('WEBHOOK EVENT:', JSON.stringify(body, null, 2));
-
-    // Process webhook events here as needed
-    
-    return 'EVENT_RECEIVED';
-  }
-
-  // =========================
-  // USER LOGIN - OAuth Flow
-  // =========================
   @Get('login')
-  login(@Res() res: Response, @Session() session: any) {
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Initiate Meta OAuth flow' })
+  @ApiResponse({ status: 302, description: 'Redirect to Meta OAuth' })
+  async login(@Session() session: any, @Res() res: Response, @Req() req: any) {
     const appId = this.configService.get<string>('META_APP_ID');
     const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-    
+
     if (!appId || !redirectUri) {
       throw new BadRequestException('META_APP_ID and META_REDIRECT_URI must be configured');
     }
-    
+
+    // Get company ID from authenticated request
+    const companyId = req.companyId;
+
+    if (!companyId) {
+      throw new BadRequestException('Company ID not found in request');
+    }
+
     // Generate and store state for CSRF protection
+    const crypto = require('crypto');
     const state = crypto.randomBytes(32).toString('hex');
-    
-    // Store state in session for validation
+
+    // Store state and company ID in session for callback
     if (session) {
       session.oauthState = state;
+      session.companyId = companyId; // Store company ID from req.companyId
     }
 
     const scopes = [
@@ -84,14 +75,13 @@ export class MetaBusinessController {
       `&state=${state}` +
       `&auth_type=rerequest`; // Forces permission dialog
 
-    console.log('Redirecting to Facebook OAuth');
+    console.log('Redirecting to Facebook OAuth for company:', companyId);
     return res.redirect(url);
   }
 
-  // =========================
-  // OAUTH CALLBACK
-  // =========================
   @Get('callback')
+  @ApiOperation({ summary: 'Handle Meta OAuth callback' })
+  @ApiResponse({ status: 302, description: 'Redirect after OAuth completion' })
   async callback(
     @Query('code') code: string,
     @Query('state') state: string,
@@ -104,7 +94,9 @@ export class MetaBusinessController {
     // Handle user denial
     if (error) {
       console.error('OAuth Error:', error, errorReason, errorDescription);
-      return res.redirect(`/auth/meta/error?message=${encodeURIComponent(errorDescription || 'Access denied')}`);
+      return res.redirect(
+        `/auth/meta/error?message=${encodeURIComponent(errorDescription || 'Access denied')}`,
+      );
     }
 
     if (!code) {
@@ -149,7 +141,7 @@ export class MetaBusinessController {
       });
 
       const longLivedUserToken = longTokenRes.data.access_token;
-      const expiresIn = longTokenRes.data.expires_in; // ~5184000 seconds (60 days)
+      const expiresIn = longTokenRes.data.expires_in;
 
       // Step 3: Get user info
       const userRes = await axios.get(`${this.GRAPH}/me`, {
@@ -161,11 +153,11 @@ export class MetaBusinessController {
 
       const user = userRes.data;
 
-      // Step 4: Get user's pages with tokens (simplified - just IDs and tokens)
+      // Step 4: Get user's pages with tokens
       const pagesRes = await axios.get(`${this.GRAPH}/me/accounts`, {
         params: {
           access_token: longLivedUserToken,
-          fields: 'id,name,access_token', // Only essentials!
+          fields: 'id,name,access_token',
         },
       });
 
@@ -173,16 +165,77 @@ export class MetaBusinessController {
 
       console.log('=== OAUTH CALLBACK DEBUG ===');
       console.log(`User: ${user.name} (${user.id})`);
-      console.log(`User Token: ${longLivedUserToken.substring(0, 20)}...`);
-      console.log(`Pages Response:`, JSON.stringify(pagesRes.data, null, 2));
       console.log(`Pages Count: ${pages.length}`);
-      
+
       if (pages.length === 0) {
         console.warn('NO PAGES FOUND - User may not manage any Facebook Pages');
-        console.warn('To fix: Go to https://www.facebook.com/pages/create and create a test page');
       }
 
-      // Return authentication data (minimal)
+      // ==========================================
+      // DATABASE INSERTION
+      // ==========================================
+
+      // Get company_id from session (stored during login)
+      const companyId = session?.companyId;
+
+      if (!companyId) {
+        console.error('Company ID not found in session');
+        return res.redirect(
+          'https://app.studiobutterfly.io/onboarding?error=company_id_missing',
+        );
+      }
+
+      // Save user connection
+      const existingUserConnection = await this.socialConnectionRepo.findOne({
+        where: { id: user.id, company_id: companyId },
+      });
+
+      if (existingUserConnection) {
+        // Update existing connection
+        existingUserConnection.platform_token = longLivedUserToken;
+        existingUserConnection.platform_name = 'Facebook';
+        await this.socialConnectionRepo.save(existingUserConnection);
+        console.log(`Updated user connection: ${user.id}`);
+      } else {
+        // Create new connection
+        const userConnection = this.socialConnectionRepo.create({
+          id: user.id,
+          company_id: companyId,
+          platform_name: 'Facebook',
+          platform_type: 'user',
+          platform_token: longLivedUserToken,
+        });
+        await this.socialConnectionRepo.save(userConnection);
+        console.log(`Created new user connection: ${user.id}`);
+      }
+
+      // Save page connections
+      for (const page of pages) {
+        const existingPageConnection = await this.socialConnectionRepo.findOne({
+          where: { id: page.id, company_id: companyId },
+        });
+
+        if (existingPageConnection) {
+          // Update existing page connection
+          existingPageConnection.platform_token = page.access_token;
+          existingPageConnection.platform_name = page.name;
+          await this.socialConnectionRepo.save(existingPageConnection);
+          console.log(`Updated page connection: ${page.id} - ${page.name}`);
+        } else {
+          // Create new page connection
+          const pageConnection = this.socialConnectionRepo.create({
+            id: page.id,
+            company_id: companyId,
+            platform_name: page.name,
+            platform_type: 'page',
+            platform_token: page.access_token,
+          });
+          await this.socialConnectionRepo.save(pageConnection);
+          console.log(`Created new page connection: ${page.id} - ${page.name}`);
+        }
+      }
+
+      // Return authentication data
       const authData = {
         success: true,
         user: {
@@ -193,32 +246,56 @@ export class MetaBusinessController {
         userToken: longLivedUserToken,
         expiresIn: expiresIn,
         expiresAt: new Date(Date.now() + expiresIn * 1000),
-        pages: pages.map(page => ({
+        pages: pages.map((page) => ({
           pageId: page.id,
           pageName: page.name,
-          pageToken: page.access_token, // This is all you need!
+          pageToken: page.access_token,
         })),
       };
 
-      // Clear session state
+      // Clear session state before redirect
       if (session) {
         delete session.oauthState;
+        delete session.companyId;
       }
 
-      // You can either return JSON or redirect to frontend
-      // Option 1: Return JSON (for API calls)
-      // return authData;
-      
-      // Option 2: Redirect with data (for web flow)
-      return res.send(authData);
-
+      return res.redirect('https://app.studiobutterfly.io/onboarding?success=true');
     } catch (error: any) {
       console.error('OAuth Callback Error:', error.response?.data || error.message);
-      const errorMsg = error.response?.data?.error?.message || 'Authentication failed';
-      return res.send("error")
+      
+      // Clear session on error too
+      if (session) {
+        delete session.oauthState;
+        delete session.companyId;
+      }
+      
+      return res.redirect('https://app.studiobutterfly.io/onboarding?error=oauth_failed');
     }
   }
 
+  @Get('connections')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get all social connections for company' })
+  @ApiResponse({ status: 200, description: 'Social connections retrieved successfully' })
+  async getConnections(@Req() req: any) {
+    const companyId = req.companyId;
+
+    if (!companyId) {
+      throw new BadRequestException('Company ID not found in request');
+    }
+
+    const connections = await this.socialConnectionRepo.find({
+      where: { company_id: companyId },
+      order: { createdDate: 'DESC' },
+    });
+
+    return {
+      success: true,
+      message: 'Social connections retrieved successfully',
+      data: connections,
+    };
+  }
   // =========================
   // GET PAGES (for authenticated users)
   // =========================
@@ -265,6 +342,17 @@ export class MetaBusinessController {
     }
   }
 
+
+
+
+
+
+
+
+
+
+
+  //.............................................................................
   // =========================
   // REFRESH USER TOKEN
   // =========================
