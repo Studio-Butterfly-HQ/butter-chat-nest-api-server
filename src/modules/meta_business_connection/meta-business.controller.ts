@@ -7,12 +7,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import type { Response } from 'express';
-import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocialConnection } from './entity/social-connection.entity';
 import { Repository } from 'typeorm';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import * as crypto from 'crypto';
 
 @ApiTags('auth/meta')
 @Controller('auth/meta')
@@ -25,63 +25,60 @@ export class MetaBusinessController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Get('login')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Initiate Meta OAuth flow' })
-  @ApiResponse({ status: 302, description: 'Redirect to Meta OAuth' })
-  async login(@Session() session: any, @Res() res: Response, @Req() req: any) {
-    const appId = this.configService.get<string>('META_APP_ID');
-    const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
 
-    if (!appId || !redirectUri) {
-      throw new BadRequestException('META_APP_ID and META_REDIRECT_URI must be configured');
-    }
+@Get('login')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
+@ApiOperation({ summary: 'Initiate Meta OAuth flow' })
+@ApiResponse({ status: 200, description: 'Returns OAuth redirect URL' }) // Changed to 200
+async login(@Session() session: any, @Req() req: any) { // Removed @Res() res: Response
+  const appId = this.configService.get<string>('META_APP_ID');
+  const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
 
-    // Get company ID from authenticated request
-    const companyId = req.companyId;
-
-    if (!companyId) {
-      throw new BadRequestException('Company ID not found in request');
-    }
-
-    // Generate and store state for CSRF protection
-    const crypto = require('crypto');
-    const state = crypto.randomBytes(32).toString('hex');
-
-    // Store state and company ID in session for callback
-    if (session) {
-      session.oauthState = state;
-      session.companyId = companyId; // Store company ID from req.companyId
-    }
-
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_posts',
-      'pages_manage_engagement',
-      'pages_messaging',
-      'pages_manage_metadata',
-      'public_profile',
-      'email',
-    ].join(',');
-
-    const url =
-      `https://www.facebook.com/v24.0/dialog/oauth?` +
-      `client_id=${appId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code` +
-      `&scope=${scopes}` +
-      `&state=${state}` +
-      `&auth_type=rerequest`; // Forces permission dialog
-
-    console.log('Redirecting to Facebook OAuth for company:', companyId);
-    return {
-      success: true,
-      redirectUrl: url
-  };
+  if (!appId || !redirectUri) {
+    throw new BadRequestException('META_APP_ID and META_REDIRECT_URI must be configured');
   }
 
+  const companyId = req.companyId;
+
+  if (!companyId) {
+    throw new BadRequestException('Company ID not found in request');
+  }
+
+  const state = crypto.randomBytes(32).toString('hex');
+
+  if (session) {
+    session.oauthState = state;
+    session.companyId = companyId;
+  }
+
+  const scopes = [
+    'pages_show_list',
+    'pages_read_engagement',
+    'pages_manage_posts',
+    'pages_manage_engagement',
+    'pages_messaging',
+    'pages_manage_metadata',
+    'public_profile',
+    'email',
+  ].join(',');
+
+  const url =
+    `https://www.facebook.com/v24.0/dialog/oauth?` +
+    `client_id=${appId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code` +
+    `&scope=${scopes}` +
+    `&state=${state}` +
+    `&auth_type=rerequest`;
+
+  console.log('Redirecting to Facebook OAuth for company:', companyId);
+  
+  return {
+    success: true,
+    redirectUrl: url
+  };
+}
   @Get('callback')
   @ApiOperation({ summary: 'Handle Meta OAuth callback' })
   @ApiResponse({ status: 302, description: 'Redirect after OAuth completion' })
