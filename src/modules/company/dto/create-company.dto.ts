@@ -102,15 +102,4 @@ export class CreateCompanyDto {
   @IsOptional()
   @MaxLength(50)
   timezone?: string;
-
-  @ApiProperty({ 
-    example: CompanyStatus.PENDING, 
-    description: 'Company status',
-    enum: CompanyStatus,
-    required: false,
-    default: CompanyStatus.PENDING
-  })
-  @IsEnum(CompanyStatus)
-  @IsOptional()
-  status?: CompanyStatus;
 }
