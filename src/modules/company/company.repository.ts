@@ -14,8 +14,7 @@ export class CompanyRepository {
 
   async findById(id: string): Promise<Company | null> {
     return await this.repository.findOne({
-      where: { id },
-      //relations: ['users', 'departments']
+      where: { id }
     });
   }
 
