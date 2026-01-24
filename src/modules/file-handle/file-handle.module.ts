@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { FileHandleController } from './file-handle.controller';
+import { FileHandleService } from './file-handle.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { FileHandleController } from './file-handle.controller';
     }),
   ],
   controllers: [FileHandleController],
-  providers: [],
-  
+  providers: [FileHandleService],
+
 })
 export class FileHandleModule {}

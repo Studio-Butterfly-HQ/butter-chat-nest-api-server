@@ -1,10 +1,11 @@
 import { Controller, Post, UseInterceptors, UploadedFile, ParseFilePipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileHandleService } from './file-handle.service';
 
 @Controller('file-handle')
 export class FileHandleController {
-  constructor() {}
+  constructor(private readonly fileHandleService: FileHandleService) {} // Inject service
 
   @Post('image/avatar')
   @ApiOperation({ summary: 'Upload company logo/avatar' })
@@ -32,13 +33,11 @@ export class FileHandleController {
     )
     file: Express.Multer.File
   ) {
-    // Return the full URL instead of just the path
-    const fileUrl = `/avatars/${file.filename}`;
+    const fileUrl = this.fileHandleService.uploadAvatar(file);
     
     return {
       filename: file.filename,
       url: fileUrl,
-      path: file.path,
     };
   }
 }

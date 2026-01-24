@@ -29,10 +29,10 @@ import { join } from 'path';
      ConfigModule.forRoot({
       isGlobal:true,
      }),
-     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
-    }),
+      ServeStaticModule.forRoot({
+        rootPath: join(__dirname, '..', 'public'),
+        serveRoot: '/public',
+      }),
      TypeOrmModule.forRootAsync({
       imports:[ConfigModule],
       useFactory:(configService: ConfigService)=>({
@@ -46,8 +46,8 @@ import { join } from 'path';
           Company,User,Department,UserDepartment,PasswordResetToken,
           Conversation,Message,ConversationTag,ConversationSummary
         ],
-         synchronize:true,
-         logging:true
+         //synchronize:true,
+         //logging:true
       }),
       inject:[ConfigService]
      }),

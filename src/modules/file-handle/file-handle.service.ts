@@ -17,6 +17,6 @@ export class FileHandleService {
 
     writeFileSync(filePath, file.buffer);
 
-    return `/avatars/${filename}`;
+    return `/public/avatars/${filename}`; // Public URL
   }
 }
