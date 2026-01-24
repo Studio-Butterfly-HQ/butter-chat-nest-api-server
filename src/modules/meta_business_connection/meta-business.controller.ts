@@ -76,7 +76,10 @@ export class MetaBusinessController {
       `&auth_type=rerequest`; // Forces permission dialog
 
     console.log('Redirecting to Facebook OAuth for company:', companyId);
-    return res.redirect(url);
+    return {
+      success: true,
+      redirectUrl: url
+  };
   }
 
   @Get('callback')
