@@ -11,12 +11,11 @@ export class FileHandleService {
       mkdirSync(uploadPath, { recursive: true });
     }
 
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const filename = unique + extname(file.originalname);
-    const filePath = join(uploadPath, filename);
+    const filename = file.filename;
+    //const filePath = join(uploadPath, filename);
 
-    writeFileSync(filePath, file.buffer);
+    //writeFileSync(filePath, file.buffer);
 
-    return `/public/avatars/${filename}`; // Public URL
+    return `http://localhost:5599/public/avatars/${filename}`;
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Post, UseInterceptors, UploadedFile, ParseFilePipe } from '
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileHandleService } from './file-handle.service';
+import { avatarUploadConfig } from './config/multer.config';
 
 @Controller('file-handle')
 export class FileHandleController {
@@ -21,7 +22,7 @@ export class FileHandleController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(FileInterceptor('avatar',avatarUploadConfig))
   uploadAvatar(
     @UploadedFile(
       new ParseFilePipe({
