@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import type { Response } from 'express';
+import { response, type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocialConnection } from './entity/social-connection.entity';
 import { Repository } from 'typeorm';
@@ -24,7 +24,6 @@ export class MetaBusinessController {
     private socialConnectionRepo: Repository<SocialConnection>,
     private readonly configService: ConfigService,
   ) {}
-
 
 @Get('login')
 @UseGuards(JwtAuthGuard)
@@ -79,10 +78,7 @@ async login(@Session() session: any, @Req() req: any) {
 
   console.log('Redirecting to Facebook OAuth for company:', companyId);
   
-  return {
-    success: true,
-    redirectUrl: url
-  };
+  return response.redirect(url)
 }
   @Get('callback')
   @ApiOperation({ summary: 'Handle Meta OAuth callback' })
