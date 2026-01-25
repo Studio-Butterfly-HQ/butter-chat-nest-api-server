@@ -31,7 +31,7 @@ export class MetaBusinessController {
 @ApiBearerAuth('JWT-auth')
 @ApiOperation({ summary: 'Initiate Meta OAuth flow' })
 @ApiResponse({ status: 200, description: 'Returns OAuth redirect URL' }) // Changed to 200
-async login(@Session() session: any, @Req() req: any) { // Removed @Res() res: Response
+async login(@Session() session: any, @Req() req: any) {
   const appId = this.configService.get<string>('META_APP_ID');
   const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
 
@@ -45,12 +45,17 @@ async login(@Session() session: any, @Req() req: any) { // Removed @Res() res: R
     throw new BadRequestException('Company ID not found in request');
   }
 
-  const state = crypto.randomBytes(32).toString('hex');
+  const payload = {
+    companyId,
+    nonce: crypto.randomBytes(16).toString('hex'),
+  };
 
-  if (session) {
-    session.oauthState = state;
-    session.companyId = companyId;
-  }
+  const state = Buffer.from(JSON.stringify(payload)).toString('base64');
+
+  // if (session) {
+  //   session.oauthState = state;
+  //   session.companyId = companyId;
+  // }
 
   const scopes = [
     'pages_show_list',
@@ -176,10 +181,16 @@ async login(@Session() session: any, @Req() req: any) { // Removed @Res() res: R
       // ==========================================
 
       // Get company_id from session (stored during login)
-      const companyId = session?.companyId;
+      //const companyId = session?.companyId;
+
+      const decoded = JSON.parse(
+        Buffer.from(state, 'base64').toString(),
+      );
+      const companyId = decoded.companyId;
+ 
 
       if (!companyId) {
-        console.error('Company ID not found in session');
+        console.error('Company ID not found');
         return res.redirect(
           'https://app.studiobutterfly.io/onboarding?error=company_id_missing',
         );
