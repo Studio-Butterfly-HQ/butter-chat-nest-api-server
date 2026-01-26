@@ -1,24 +1,33 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+// dto/create-department.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateDepartmentDto {
-    @ApiProperty({
-        example:'team-alpha',
-        description:'department-name'
-    })
-    @IsString()
-    @IsNotEmpty()
-    department_name: string
+  @ApiProperty({
+    description: 'Name of the department',
+    example: 'Engineering',
+    maxLength: 150,
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(150)
+  department_name: string;
 
-    @ApiProperty({
-        example:'engineering and coding',
-        description:'description about the department'
-    })
-    @IsString()
-    @IsOptional()
-    description?:string
+  @ApiProperty({
+    description: 'Department description',
+    example: 'Software development and engineering team',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-    @IsString()
-    @IsOptional()
-    department_profile_uri?:string
+  @ApiProperty({
+    description: 'URL to department profile image',
+    example: 'https://example.com/departments/engineering.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  department_profile_uri?: string;
 }

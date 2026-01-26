@@ -22,6 +22,9 @@ export class Department extends MetaData{
   @Column({ name: 'department_profile_uri', type: 'text', nullable: true })
   department_profile_uri?: string;
 
+  @Column({name:'employee_count',type:'text',default:0})
+  employee_count:Number;
+
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'company_id' })
   company: Company;

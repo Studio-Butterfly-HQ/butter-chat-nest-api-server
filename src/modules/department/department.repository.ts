@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
 import { Department } from './entities/department.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
@@ -14,24 +9,109 @@ import { UpdateDepartmentDto } from './dto/update-department.dto';
 export class DepartmentRepository {
   constructor(
     @InjectRepository(Department)
-    private readonly departmentDbRepo: Repository<Department>,
+    private readonly repository: Repository<Department>,
   ) {}
 
   /**
-   * Get all departments for a company
+   * Find all departments for a company with company info and top 10 users (name and email only)
    */
-  async findAll(companyId: string): Promise<Department[]> {
-    return this.departmentDbRepo.find({
-      where: { company_id: companyId },
-      order: { createdDate: 'DESC' }, 
-    });
+  async findAll(companyId: string) {
+    const departments = await this.repository
+      .createQueryBuilder('dept')
+      //.leftJoinAndSelect('dept.company', 'company')
+      .leftJoin('dept.userDepartments', 'ud')
+      .leftJoin('ud.user', 'user')
+      .addSelect([
+        'ud.id',
+        'user.id',
+        'user.user_name',
+        'user.email',
+        'user.profile_uri'
+      ])
+      .where('dept.company_id = :companyId', { companyId })
+      .orderBy('dept.createdDate', 'DESC')
+      .addOrderBy('ud.assigned_at', 'DESC')
+      .getMany();
+
+    // Limit users to top 10 per department
+    return departments.map(dept => ({
+      ...dept,
+      userDepartments: dept.userDepartments?.slice(0, 10) || [],
+    }));
   }
 
   /**
-   * Get a single department
+   * Find one department by ID with company info and top 10 users (name and email only)
    */
-  async findOne(id: string, companyId: string): Promise<Department> {
-    const department = await this.departmentDbRepo.findOne({
+  async findOne(id: string, companyId: string) {
+    const department = await this.repository
+      .createQueryBuilder('dept')
+      //.leftJoinAndSelect('dept.company', 'company')
+      .leftJoin('dept.userDepartments', 'ud')
+      .leftJoin('ud.user', 'user')
+      .addSelect([
+        'ud.id',
+        'user.id',
+        'user.user_name',
+        'user.email',
+      ])
+      .where('dept.id = :id', { id })
+      .andWhere('dept.company_id = :companyId', { companyId })
+      .orderBy('ud.assigned_at', 'DESC')
+      .getOne();
+
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+
+    // Limit users to top 10
+    return {
+      ...department,
+      userDepartments: department.userDepartments?.slice(0, 10) || [],
+    };
+  }
+
+  /**
+   * Create a new department
+   */
+  async create(companyId: string, createDepartmentDto: CreateDepartmentDto) {
+    // Check if department with same name exists in company
+    const existingDepartment = await this.repository.findOne({
+      where: {
+        company_id: companyId,
+        department_name: createDepartmentDto.department_name,
+      },
+    });
+
+    if (existingDepartment) {
+      throw new ConflictException('Department with this name already exists');
+    }
+
+    const department = this.repository.create({
+      ...createDepartmentDto,
+      company_id: companyId,
+      employee_count: 0,
+    });
+
+    const savedDepartment = await this.repository.save(department);
+
+    // Fetch with company info
+    return this.repository
+      .createQueryBuilder('dept')
+      //.leftJoinAndSelect('dept.company', 'company')
+      .where('dept.id = :id', { id: savedDepartment.id })
+      .getOne();
+  }
+
+  /**
+   * Update a department
+   */
+  async update(
+    id: string,
+    updateDepartmentDto: UpdateDepartmentDto,
+    companyId: string,
+  ) {
+    const department = await this.repository.findOne({
       where: { id, company_id: companyId },
     });
 
@@ -39,71 +119,44 @@ export class DepartmentRepository {
       throw new NotFoundException('Department not found');
     }
 
-    return department;
-  }
-
-  /**
-   * Create department
-   */
-  async create(
-    companyId: string,
-    dto: CreateDepartmentDto,
-  ): Promise<Department> {
-    try {
-      const department = this.departmentDbRepo.create({
-        company_id: companyId,
-        department_name: dto.department_name,
-        description: dto.description,
-        department_profile_uri: dto.department_profile_uri,
+    // Check for name conflict if name is being updated
+    if (
+      updateDepartmentDto.department_name &&
+      updateDepartmentDto.department_name !== department.department_name
+    ) {
+      const existingDepartment = await this.repository.findOne({
+        where: {
+          company_id: companyId,
+          department_name: updateDepartmentDto.department_name,
+        },
       });
 
-      return await this.departmentDbRepo.save(department);
-    } catch (error) {
-      // unique(company_id, department_name)
-      if (error.code === '23505') {
-        throw new ConflictException(
-          'Department with this name already exists',
-        );
+      if (existingDepartment) {
+        throw new ConflictException('Department with this name already exists');
       }
-      throw error;
     }
+
+    // Update department
+    Object.assign(department, updateDepartmentDto);
+    await this.repository.save(department);
+
+    // Fetch updated department with company info and top 10 users
+    return this.findOne(id, companyId);
   }
 
   /**
-   * Update department
+   * Remove a department
    */
-  async update(
-    id: string,
-    dto: UpdateDepartmentDto,
-    companyId: string,
-  ): Promise<Department> {
-    const department = await this.findOne(id, companyId);
-
-    Object.assign(department, dto);
-
-    try {
-      return await this.departmentDbRepo.save(department);
-    } catch (error) {
-      if (error.code === '23505') {
-        throw new ConflictException(
-          'Department with this name already exists',
-        );
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Delete department
-   */
-  async remove(id: string, companyId: string): Promise<void> {
-    const result = await this.departmentDbRepo.delete({
-      id,
-      company_id: companyId,
+  async remove(id: string, companyId: string) {
+    const department = await this.repository.findOne({
+      where: { id, company_id: companyId },
     });
 
-    if (result.affected === 0) {
+    if (!department) {
       throw new NotFoundException('Department not found');
     }
+
+    await this.repository.remove(department);
+    return { id, deleted: true };
   }
 }
