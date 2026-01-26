@@ -24,6 +24,9 @@ import { MetaBusinessModule } from './modules/meta_business_connection/meta-busi
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { SocialConnection } from './modules/meta_business_connection/entity/social-connection.entity';
+import { PendingUser } from './modules/user/entities/pending-user.entity';
+import { ShiftModule } from './modules/shift/shift.module';
+import { Shift } from './modules/shift/entities/shift.entity';
 
 @Module({
   imports: [
@@ -46,7 +49,7 @@ import { SocialConnection } from './modules/meta_business_connection/entity/soci
          entities:[
           Company,User,Department,UserDepartment,PasswordResetToken,
           Conversation,Message,ConversationTag,ConversationSummary,
-          SocialConnection 
+          SocialConnection,PendingUser,Shift
         ],
         synchronize:true,
          //logging:true
@@ -68,7 +71,8 @@ import { SocialConnection } from './modules/meta_business_connection/entity/soci
      FileHandleModule,
      MessengerFactoryModule,
     //MessengerBullMQProducerModule,
-    MetaBusinessModule
+    MetaBusinessModule,
+    ShiftModule,
   ],
   controllers: [],
   providers: [],
