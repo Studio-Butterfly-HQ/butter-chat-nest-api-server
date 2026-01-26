@@ -10,8 +10,8 @@ export class CompanyService {
     private readonly companyRepository: CompanyRepository,
   ) {}
 
-  async getCompanyById(id: string): Promise<Company> {
-    const company = await this.companyRepository.findById(id);
+  async getCompanyByIdWithUser(id: string,userId:string): Promise<Company> {
+    const company = await this.companyRepository.findByIdWithUser(id,userId);
     
     if (!company) {
       throw new NotFoundException(`Company with ID ${id} not found`);
@@ -20,7 +20,7 @@ export class CompanyService {
     return company;
   }
 
-  async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
+  async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
     const company = await this.companyRepository.findById(id);
     
     if (!company) {

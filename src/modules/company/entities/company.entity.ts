@@ -4,6 +4,7 @@ import { User } from '../../user/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 import { SocialConnection } from 'src/modules/meta_business_connection/entity/social-connection.entity';
+import { Shift } from 'src/modules/shift/entities/shift.entity';
 
 export enum CompanyStatus {
   ACTIVE = 'ACTIVE',
@@ -58,6 +59,9 @@ export class Company extends MetaData {
 
   @OneToMany(() => Department, department => department.company)
   departments: Department[];
+
+  @OneToMany(() => Shift, department => department.company)
+  shifts: Shift[];
 
   @OneToMany(() => SocialConnection, socialConnection => socialConnection.company)
   socialConnections: SocialConnection[];
