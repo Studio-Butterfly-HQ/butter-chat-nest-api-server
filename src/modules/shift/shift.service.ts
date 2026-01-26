@@ -1,26 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
+import { ShiftRepository } from './shift.repository';
 
 @Injectable()
 export class ShiftService {
-  create(createShiftDto: CreateShiftDto) {
-    return 'This action adds a new shift';
+
+  constructor(private readonly shiftRepository: ShiftRepository){}
+
+  create(companyId:string,createShiftDto: CreateShiftDto) {
+    return this.shiftRepository.create(companyId,createShiftDto);
   }
 
-  findAll() {
-    return `This action returns all shift`;
+  findAll(companyId:string) {
+    return this.shiftRepository.findAll(companyId);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} shift`;
+  findOne(companyId:string,id: string) {
+    return this.shiftRepository.findOne(id,companyId);
   }
 
-  update(id: number, updateShiftDto: UpdateShiftDto) {
-    return `This action updates a #${id} shift`;
+  update(companyId:string,id: string, updateShiftDto: UpdateShiftDto) {
+    return this.shiftRepository.update(id,updateShiftDto,companyId);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} shift`;
+  remove(companyId:string,id: string) {
+    return this.shiftRepository.remove(id,companyId);
   }
 }
