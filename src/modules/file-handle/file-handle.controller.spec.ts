@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FileHandleController } from './file-handle.controller';
+import { FileHandleController } from './file-handle.controller_public';
 
 describe('FileHandleController', () => {
   let controller: FileHandleController;
