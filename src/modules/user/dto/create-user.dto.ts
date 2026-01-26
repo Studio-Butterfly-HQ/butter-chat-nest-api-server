@@ -86,28 +86,4 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsUUID()
   department_id: string;
-
-  @ApiPropertyOptional({
-    description: 'Shift start time (HH:mm:ss format)',
-    example: '09:00:00',
-    pattern: '^([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)$'
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, {
-    message: 'shift_start must be in format HH:mm:ss (e.g., 09:00:00)'
-  })
-  shift_start?: string;
-
-  @ApiPropertyOptional({
-    description: 'Shift end time (HH:mm:ss format)',
-    example: '17:00:00',
-    pattern: '^([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)$'
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, {
-    message: 'shift_end must be in format HH:mm:ss (e.g., 17:00:00)'
-  })
-  shift_end?: string;
 }

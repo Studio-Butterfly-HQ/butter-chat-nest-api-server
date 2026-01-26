@@ -1,7 +1,6 @@
 // src/modules/user/entities/user.entity.ts
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Company } from '../../company/entities/company.entity';
-import { Department } from '../../department/entities/department.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 import { UserDepartment } from 'src/modules/user-department/entities/user-department.entity';
 
