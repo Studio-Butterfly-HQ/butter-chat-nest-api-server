@@ -30,7 +30,7 @@ export class MetaBusinessController {
 @ApiBearerAuth('JWT-auth')
 @ApiOperation({ summary: 'Initiate Meta OAuth flow' })
 @ApiResponse({ status: 200, description: 'Returns OAuth redirect URL' }) // Changed to 200
-async login(@Session() session: any, @Req() req: any) {
+async login(@Session() session: any, @Req() req: any,@Res() res: Response) {
   const appId = this.configService.get<string>('META_APP_ID');
   const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
 
@@ -78,7 +78,7 @@ async login(@Session() session: any, @Req() req: any) {
 
   console.log('Redirecting to Facebook OAuth for company:', companyId);
   
-  return response.redirect(url)
+  return res.redirect(url)
 }
   @Get('callback')
   @ApiOperation({ summary: 'Handle Meta OAuth callback' })
