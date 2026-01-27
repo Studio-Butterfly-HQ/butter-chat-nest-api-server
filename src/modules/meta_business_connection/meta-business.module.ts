@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MetaBusinessController } from './meta-business.controller';
 
 import { Company } from '../company/entities/company.entity';
 import { SocialConnection } from './entity/social-connection.entity';
+import { MetaBusinessController } from './meta-business.controller.main';
 
 @Module({
   imports: [
