@@ -22,7 +22,7 @@ export class AuthService {
         role: result.user.role,
       };
       
-      let accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      let accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
       let refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
       
       return {
@@ -44,7 +44,7 @@ export class AuthService {
         role: result.user.role,
       };
       
-      let accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      let accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
       let refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
       
       return {
