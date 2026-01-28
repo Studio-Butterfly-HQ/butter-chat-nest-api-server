@@ -38,7 +38,7 @@ export class DepartmentController {
   @ApiOperation({
     summary: 'Get all departments for the company',
     description:
-      "Retrieves a list of all departments for the authenticated user's company. Each department includes company information, up to 10 users (name and email only), and the total employee count.",
+      "Retrieves a list of all departments for the authenticated user's company. Each department includes up to 10 users (id, name and email only) and the total employee count.",
   })
   @ApiResponse({
     status: 200,
@@ -59,30 +59,17 @@ export class DepartmentController {
               description: { type: 'string', nullable: true, example: 'Software development team' },
               department_profile_uri: { type: 'string', nullable: true },
               employee_count: { type: 'number', example: 25 },
-              created_at: { type: 'string', format: 'date-time' },
-              updated_at: { type: 'string', format: 'date-time' },
-              company: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', format: 'uuid' },
-                  company_name: { type: 'string', example: 'Tech Corp' },
-                },
-              },
-              userDepartments: {
+              createdDate: { type: 'string', format: 'date-time' },
+              updatedDate: { type: 'string', format: 'date-time' },
+              users: {
                 type: 'array',
                 maxItems: 10,
                 items: {
                   type: 'object',
                   properties: {
                     id: { type: 'string', format: 'uuid' },
-                    user: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string', format: 'uuid' },
-                        user_name: { type: 'string', example: 'John Doe' },
-                        email: { type: 'string', example: 'john@example.com' },
-                      },
-                    },
+                    user_name: { type: 'string', example: 'John Doe' },
+                    email: { type: 'string', example: 'john@example.com' },
                   },
                 },
               },
@@ -121,7 +108,7 @@ export class DepartmentController {
   @ApiOperation({
     summary: 'Get department by ID',
     description:
-      'Retrieves detailed information about a specific department including company information, employee count, and up to 10 users (name and email only).',
+      'Retrieves detailed information about a specific department including employee count and up to 10 users (id, name and email only).',
   })
   @ApiParam({
     name: 'id',
@@ -147,30 +134,17 @@ export class DepartmentController {
             description: { type: 'string', nullable: true, example: 'Software development team' },
             department_profile_uri: { type: 'string', nullable: true },
             employee_count: { type: 'number', example: 25 },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
-            company: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                company_name: { type: 'string', example: 'Tech Corp' },
-              },
-            },
-            userDepartments: {
+            createdDate: { type: 'string', format: 'date-time' },
+            updatedDate: { type: 'string', format: 'date-time' },
+            users: {
               type: 'array',
               maxItems: 10,
               items: {
                 type: 'object',
                 properties: {
                   id: { type: 'string', format: 'uuid' },
-                  user: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', format: 'uuid' },
-                      user_name: { type: 'string', example: 'John Doe' },
-                      email: { type: 'string', example: 'john@example.com' },
-                    },
-                  },
+                  user_name: { type: 'string', example: 'John Doe' },
+                  email: { type: 'string', example: 'john@example.com' },
                 },
               },
             },
@@ -251,15 +225,8 @@ export class DepartmentController {
             description: { type: 'string', nullable: true, example: 'Software development team' },
             department_profile_uri: { type: 'string', nullable: true },
             employee_count: { type: 'number', example: 0 },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
-            company: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                company_name: { type: 'string', example: 'Tech Corp' },
-              },
-            },
+            createdDate: { type: 'string', format: 'date-time' },
+            updatedDate: { type: 'string', format: 'date-time' },
           },
         },
         timestamp: { type: 'string', format: 'date-time', example: '2026-01-26T10:00:00.000Z' },
@@ -295,7 +262,7 @@ export class DepartmentController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Department with this name already exists' },
+        message: { type: 'string', example: "Department with name 'Engineering' already exists in this company" },
         error: {
           type: 'object',
           properties: {
@@ -341,7 +308,7 @@ export class DepartmentController {
   @ApiOperation({
     summary: 'Update department',
     description:
-      'Updates an existing department. Only provided fields will be updated. Returns updated department with company information and up to 10 users.',
+      'Updates an existing department. Only provided fields will be updated. Returns updated department with up to 10 users.',
   })
   @ApiParam({
     name: 'id',
@@ -371,33 +338,8 @@ export class DepartmentController {
             description: { type: 'string', nullable: true, example: 'Updated description' },
             department_profile_uri: { type: 'string', nullable: true },
             employee_count: { type: 'number', example: 25 },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
-            company: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                company_name: { type: 'string', example: 'Tech Corp' },
-              },
-            },
-            userDepartments: {
-              type: 'array',
-              maxItems: 10,
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', format: 'uuid' },
-                  user: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', format: 'uuid' },
-                      user_name: { type: 'string', example: 'John Doe' },
-                      email: { type: 'string', example: 'john@example.com' },
-                    },
-                  },
-                },
-              },
-            },
+            createdDate: { type: 'string', format: 'date-time' },
+            updatedDate: { type: 'string', format: 'date-time' },
           },
         },
         timestamp: { type: 'string', format: 'date-time', example: '2026-01-26T10:00:00.000Z' },
@@ -411,7 +353,7 @@ export class DepartmentController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Department not found' },
+        message: { type: 'string', example: 'Department with ID 550e8400-e29b-41d4-a716-446655440000 not found' },
         error: {
           type: 'object',
           properties: {
@@ -430,7 +372,7 @@ export class DepartmentController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Department with this name already exists' },
+        message: { type: 'string', example: "Department with name 'Engineering' already exists in this company" },
         error: {
           type: 'object',
           properties: {
@@ -497,7 +439,7 @@ export class DepartmentController {
   @ApiOperation({
     summary: 'Delete department',
     description:
-      'Deletes a department. This will also remove all user-department associations due to CASCADE delete.',
+      'Deletes a department. This will also remove all user-department associations from the junction table due to CASCADE delete.',
   })
   @ApiParam({
     name: 'id',
@@ -517,8 +459,8 @@ export class DepartmentController {
         data: {
           type: 'object',
           properties: {
-            id: { type: 'string', format: 'uuid' },
-            deleted: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Department deleted successfully' },
+            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
           },
         },
         timestamp: { type: 'string', format: 'date-time', example: '2026-01-26T10:00:00.000Z' },
@@ -532,7 +474,7 @@ export class DepartmentController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Department not found' },
+        message: { type: 'string', example: 'Department with ID 550e8400-e29b-41d4-a716-446655440000 not found' },
         error: {
           type: 'object',
           properties: {

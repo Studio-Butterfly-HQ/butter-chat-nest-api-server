@@ -13,69 +13,72 @@ export class DepartmentRepository {
   ) {}
 
   /**
-   * Find all departments for a company with company info and top 10 users (name and email only)
+   * Find all departments for a company with top 10 users (name and email only)
    */
   async findAll(companyId: string) {
     const departments = await this.repository
-      .createQueryBuilder('dept')
-      //.leftJoinAndSelect('dept.company', 'company')
-      .leftJoin('dept.userDepartments', 'ud')
-      .leftJoin('ud.user', 'user')
-      .addSelect([
-        'ud.id',
-        'user.id',
-        'user.user_name',
-        'user.email',
-        'user.profile_uri'
-      ])
-      .where('dept.company_id = :companyId', { companyId })
-      .orderBy('dept.createdDate', 'DESC')
-      .addOrderBy('ud.assigned_at', 'DESC')
+      .createQueryBuilder('department')
+      .where('department.company_id = :companyId', { companyId })
+      .orderBy('department.createdDate', 'DESC')
       .getMany();
 
-    // Limit users to top 10 per department
-    return departments.map(dept => ({
-      ...dept,
-      userDepartments: dept.userDepartments?.slice(0, 10) || [],
-    }));
+    // Fetch limited users for each department
+    for (const department of departments) {
+      const usersQuery = await this.repository
+        .createQueryBuilder('dept')
+        .innerJoin('dept.users', 'user')
+        .select(['user.id', 'user.user_name', 'user.email'])
+        .where('dept.id = :deptId', { deptId: department.id })
+        .limit(10)
+        .getRawMany();
+
+      department.users = usersQuery.map(u => ({
+        id: u.user_id,
+        user_name: u.user_user_name,
+        email: u.user_email,
+      })) as any;
+    }
+
+    return departments;
   }
 
   /**
-   * Find one department by ID with company info and top 10 users (name and email only)
+   * Find one department by ID with top 10 users (name and email only)
    */
   async findOne(id: string, companyId: string) {
     const department = await this.repository
-      .createQueryBuilder('dept')
-      //.leftJoinAndSelect('dept.company', 'company')
-      .leftJoin('dept.userDepartments', 'ud')
-      .leftJoin('ud.user', 'user')
-      .addSelect([
-        'ud.id',
-        'user.id',
-        'user.user_name',
-        'user.email',
-      ])
-      .where('dept.id = :id', { id })
-      .andWhere('dept.company_id = :companyId', { companyId })
-      .orderBy('ud.assigned_at', 'DESC')
+      .createQueryBuilder('department')
+      .where('department.id = :id', { id })
+      .andWhere('department.company_id = :companyId', { companyId })
       .getOne();
 
     if (!department) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(`Department with ID ${id} not found`);
     }
 
-    // Limit users to top 10
-    return {
-      ...department,
-      userDepartments: department.userDepartments?.slice(0, 10) || [],
-    };
+    // Fetch top 10 users
+    const usersQuery = await this.repository
+      .createQueryBuilder('dept')
+      .innerJoin('dept.users', 'user')
+      .select(['user.id', 'user.user_name', 'user.email'])
+      .where('dept.id = :deptId', { deptId: department.id })
+      .limit(10)
+      .getRawMany();
+
+    department.users = usersQuery.map(u => ({
+      id: u.user_id,
+      user_name: u.user_user_name,
+      email: u.user_email,
+    })) as any;
+
+    return department;
   }
 
   /**
    * Create a new department
    */
   async create(companyId: string, createDepartmentDto: CreateDepartmentDto) {
-    // Check if department with same name exists in company
+    // Check if department with same name already exists in company
     const existingDepartment = await this.repository.findOne({
       where: {
         company_id: companyId,
@@ -84,7 +87,9 @@ export class DepartmentRepository {
     });
 
     if (existingDepartment) {
-      throw new ConflictException('Department with this name already exists');
+      throw new ConflictException(
+        `Department with name '${createDepartmentDto.department_name}' already exists in this company`,
+      );
     }
 
     const department = this.repository.create({
@@ -93,14 +98,7 @@ export class DepartmentRepository {
       employee_count: 0,
     });
 
-    const savedDepartment = await this.repository.save(department);
-
-    // Fetch with company info
-    return this.repository
-      .createQueryBuilder('dept')
-      //.leftJoinAndSelect('dept.company', 'company')
-      .where('dept.id = :id', { id: savedDepartment.id })
-      .getOne();
+    return await this.repository.save(department);
   }
 
   /**
@@ -116,14 +114,11 @@ export class DepartmentRepository {
     });
 
     if (!department) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(`Department with ID ${id} not found`);
     }
 
-    // Check for name conflict if name is being updated
-    if (
-      updateDepartmentDto.department_name &&
-      updateDepartmentDto.department_name !== department.department_name
-    ) {
+    // Check if updating name would create a duplicate
+    if (updateDepartmentDto.department_name) {
       const existingDepartment = await this.repository.findOne({
         where: {
           company_id: companyId,
@@ -131,17 +126,16 @@ export class DepartmentRepository {
         },
       });
 
-      if (existingDepartment) {
-        throw new ConflictException('Department with this name already exists');
+      if (existingDepartment && existingDepartment.id !== id) {
+        throw new ConflictException(
+          `Department with name '${updateDepartmentDto.department_name}' already exists in this company`,
+        );
       }
     }
 
-    // Update department
     Object.assign(department, updateDepartmentDto);
-    await this.repository.save(department);
-
-    // Fetch updated department with company info and top 10 users
-    return this.findOne(id, companyId);
+    
+    return await this.repository.save(department);
   }
 
   /**
@@ -153,10 +147,32 @@ export class DepartmentRepository {
     });
 
     if (!department) {
-      throw new NotFoundException('Department not found');
+      throw new NotFoundException(`Department with ID ${id} not found`);
     }
 
     await this.repository.remove(department);
-    return { id, deleted: true };
+    
+    return {
+      message: 'Department deleted successfully',
+      id,
+    };
+  }
+
+  /**
+   * Update employee count for a department
+   */
+  async updateEmployeeCount(departmentId: string, companyId: string) {
+    const department = await this.repository.findOne({
+      where: { id: departmentId, company_id: companyId },
+      relations: ['users'],
+    });
+
+    if (!department) {
+      throw new NotFoundException(`Department with ID ${departmentId} not found`);
+    }
+
+    department.employee_count = department.users?.length || 0;
+    
+    return await this.repository.save(department);
   }
 }

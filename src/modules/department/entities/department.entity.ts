@@ -2,7 +2,8 @@
 import { MetaData } from "src/common/entity/meta-data";
 import { Company } from "src/modules/company/entities/company.entity";
 import { UserDepartment } from "src/modules/user-department/entities/user-department.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { User } from "src/modules/user/entities/user.entity";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany } from "typeorm";
 
 @Entity('departments')
 @Unique(['company_id', 'department_name'])
@@ -29,6 +30,9 @@ export class Department extends MetaData{
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @OneToMany(() => UserDepartment, userDept => userDept.department)
-  userDepartments: UserDepartment[];
+   @ManyToMany(() => User, user => user.departments, {
+    onDelete: 'CASCADE'
+  })
+  users: User[];
+
 }
