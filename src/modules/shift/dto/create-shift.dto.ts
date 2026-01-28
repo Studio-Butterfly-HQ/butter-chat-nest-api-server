@@ -9,7 +9,7 @@ export class CreateShiftDto {
   })
   @IsString()
   @IsNotEmpty()
-  shiftName: string;
+  shift_name: string;
 
   @ApiProperty({
     example: '09:00',
@@ -18,7 +18,7 @@ export class CreateShiftDto {
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
     message: 'shiftStartTime must be in HH:mm format',
   })
-  shiftStartTime: string;
+  shift_start_time: string;
 
   @ApiProperty({
     example: '17:00',
@@ -27,5 +27,5 @@ export class CreateShiftDto {
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
     message: 'shiftEndTime must be in HH:mm format',
   })
-  shiftEndTime: string;
+  shift_end_time: string;
 }

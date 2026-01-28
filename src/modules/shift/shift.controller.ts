@@ -67,12 +67,12 @@ export class ShiftController {
         message: 'Shift created successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          shiftName: 'Morning Shift',
-          shiftStartTime: '09:00:00',
-          shiftEndTime: '17:00:00',
-          companyId: '550e8400-e29b-41d4-a716-446655440000',
-          createdDate: '2024-01-26T10:30:00.000Z',
-          updatedDate: '2024-01-26T10:30:00.000Z'
+          shift_name: 'Morning Shift',
+          shift_start_time: '09:00:00',
+          shift_end_time: '17:00:00',
+          company_id: '550e8400-e29b-41d4-a716-446655440000',
+          created_date: '2024-01-26T10:30:00.000Z',
+          updated_date: '2024-01-26T10:30:00.000Z'
         },
         timestamp: '2024-01-26T10:30:00.000Z'
       }
@@ -151,12 +151,12 @@ export class ShiftController {
         data: [
           {
             id: '123e4567-e89b-12d3-a456-426614174000',
-            shiftName: 'Morning Shift',
-            shiftStartTime: '09:00:00',
-            shiftEndTime: '17:00:00',
-            companyId: '550e8400-e29b-41d4-a716-446655440000',
-            createdDate: '2024-01-26T10:30:00.000Z',
-            updatedDate: '2024-01-26T10:30:00.000Z',
+            shift_name: 'Morning Shift',
+            shift_start_time: '09:00:00',
+            shift_end_time: '17:00:00',
+            company_id: '550e8400-e29b-41d4-a716-446655440000',
+            created_date: '2024-01-26T10:30:00.000Z',
+            updated_date: '2024-01-26T10:30:00.000Z',
             users: [
               {
                 id: 'user-uuid-1',
@@ -223,12 +223,12 @@ export class ShiftController {
         message: 'Shift retrieved successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          shiftName: 'Morning Shift',
-          shiftStartTime: '09:00:00',
-          shiftEndTime: '17:00:00',
-          companyId: '550e8400-e29b-41d4-a716-446655440000',
-          createdDate: '2024-01-26T10:30:00.000Z',
-          updatedDate: '2024-01-26T10:30:00.000Z',
+          shift_name: 'Morning Shift',
+          shift_start_time: '09:00:00',
+          shift_end_time: '17:00:00',
+          company_id: '550e8400-e29b-41d4-a716-446655440000',
+          created_date: '2024-01-26T10:30:00.000Z',
+          updated_date: '2024-01-26T10:30:00.000Z',
           users: [
             {
               id: 'user-uuid-1',
@@ -309,12 +309,12 @@ export class ShiftController {
         message: 'Shift updated successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          shiftName: 'Morning Shift (Updated)',
-          shiftStartTime: '08:00:00',
-          shiftEndTime: '16:00:00',
-          companyId: '550e8400-e29b-41d4-a716-446655440000',
-          createdDate: '2024-01-26T10:30:00.000Z',
-          updatedDate: '2024-01-26T11:45:00.000Z'
+          shift_name: 'Morning Shift (Updated)',
+          shift_start_time: '08:00:00',
+          shift_end_time: '16:00:00',
+          company_id: '550e8400-e29b-41d4-a716-446655440000',
+          created_date: '2024-01-26T10:30:00.000Z',
+          updated_date: '2024-01-26T11:45:00.000Z'
         },
         timestamp: '2024-01-26T11:45:00.000Z'
       }
@@ -382,7 +382,7 @@ export class ShiftController {
   })
   async update(@Req() req, @Param('id', ParseUUIDPipe) id: string, @Body() updateShiftDto: UpdateShiftDto): Promise<ApiResponse> {
     const companyId = req.companyId;
-    const shift = await this.shiftService.update(id,companyId,updateShiftDto,);
+    const shift = await this.shiftService.update(id,companyId,updateShiftDto);
     
     return {
       success: true,

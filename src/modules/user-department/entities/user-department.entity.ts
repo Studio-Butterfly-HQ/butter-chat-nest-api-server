@@ -6,7 +6,6 @@ import {
   Unique, 
   ManyToOne, 
   JoinColumn, 
-  CreateDateColumn,
   BeforeInsert,
   BeforeUpdate 
 } from 'typeorm';

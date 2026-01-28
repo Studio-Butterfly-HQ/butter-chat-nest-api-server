@@ -5,23 +5,23 @@ import { Company } from 'src/modules/company/entities/company.entity';
 import { User } from 'src/modules/user/entities/user.entity';
 
 @Entity('shifts')
-@Index(['companyId', 'shiftName'], { unique: true })
+@Index(['company_id', 'shift_name'], { unique: true })
 export class Shift extends MetaData {
   
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 100 })
-  shiftName: string;
+  shift_name: string;
 
   @Column({ type: 'time' })
-  shiftStartTime: string;
+  shift_start_time: string;
 
   @Column({ type: 'time' })
-  shiftEndTime: string;
+  shift_end_time: string;
 
   @Column({ type: 'uuid' })
-  companyId: string;
+  company_id: string;
 
   //Relationship
   @ManyToOne(() => Company, (company) => company.shifts, {

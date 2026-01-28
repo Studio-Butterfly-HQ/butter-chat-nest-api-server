@@ -18,8 +18,8 @@ export class ShiftRepository {
   async findAll(companyId: string) {
     const shifts = await this.repository
       .createQueryBuilder('shift')
-      .where('shift.companyId = :companyId', { companyId })
-      .orderBy('shift.createdDate', 'DESC')
+      .where('shift.company_id = :companyId', { companyId })
+      .orderBy('shift.created_date', 'DESC')
       .getMany();
 
     // Fetch limited users for each shift
@@ -49,7 +49,7 @@ export class ShiftRepository {
     const shift = await this.repository
       .createQueryBuilder('shift')
       .where('shift.id = :id', { id })
-      .andWhere('shift.companyId = :companyId', { companyId })
+      .andWhere('shift.company_id = :companyId', { companyId })
       .getOne();
 
     if (!shift) {
@@ -79,13 +79,13 @@ export class ShiftRepository {
    */
   async create(companyId: string, createShiftDto: CreateShiftDto) {
     // Validate shift times
-    this.validateShiftTimes(createShiftDto.shiftStartTime, createShiftDto.shiftEndTime);
+    this.validateShiftTimes(createShiftDto.shift_start_time, createShiftDto.shift_end_time);
 
     // Check if shift with same name exists in company
     const existingShift = await this.repository.findOne({
       where: {
-        companyId,
-        shiftName: createShiftDto.shiftName,
+        company_id: companyId,
+        shift_name: createShiftDto.shift_name,
       },
     });
 
@@ -93,12 +93,11 @@ export class ShiftRepository {
       throw new ConflictException('Shift with this name already exists');
     }
 
-    // Add seconds to time format (HH:mm:ss)
     const shift = this.repository.create({
       ...createShiftDto,
-      companyId,
-      shiftStartTime: `${createShiftDto.shiftStartTime}:00`,
-      shiftEndTime: `${createShiftDto.shiftEndTime}:00`,
+      company_id: companyId,
+      shift_start_time: `${createShiftDto.shift_start_time}:00`,
+      shift_end_time: `${createShiftDto.shift_end_time}:00`,
     });
 
     return this.repository.save(shift);
@@ -109,7 +108,7 @@ export class ShiftRepository {
    */
   async update(id: string, updateShiftDto: UpdateShiftDto, companyId: string) {
     const shift = await this.repository.findOne({
-      where: { id, companyId },
+      where: { id, company_id: companyId },
     });
 
     if (!shift) {
@@ -117,18 +116,18 @@ export class ShiftRepository {
     }
 
     // Validate shift times if provided
-    if (updateShiftDto.shiftStartTime || updateShiftDto.shiftEndTime) {
-      const startTime = updateShiftDto.shiftStartTime || shift.shiftStartTime.substring(0, 5);
-      const endTime = updateShiftDto.shiftEndTime || shift.shiftEndTime.substring(0, 5);
+    if (updateShiftDto.shift_start_time || updateShiftDto.shift_end_time) {
+      const startTime = updateShiftDto.shift_start_time || shift.shift_start_time.substring(0, 5);
+      const endTime = updateShiftDto.shift_end_time || shift.shift_end_time.substring(0, 5);
       this.validateShiftTimes(startTime, endTime);
     }
 
     // Check for name conflict if name is being updated
-    if (updateShiftDto.shiftName && updateShiftDto.shiftName !== shift.shiftName) {
+    if (updateShiftDto.shift_name && updateShiftDto.shift_name !== shift.shift_name) {
       const existingShift = await this.repository.findOne({
         where: {
-          companyId,
-          shiftName: updateShiftDto.shiftName,
+          company_id: companyId,
+          shift_name: updateShiftDto.shift_name,
         },
       });
 
@@ -139,11 +138,11 @@ export class ShiftRepository {
 
     // Update shift with proper time format
     const updateData: any = { ...updateShiftDto };
-    if (updateShiftDto.shiftStartTime) {
-      updateData.shiftStartTime = `${updateShiftDto.shiftStartTime}:00`;
+    if (updateShiftDto.shift_start_time) {
+      updateData.shift_start_time = `${updateShiftDto.shift_start_time}:00`;
     }
-    if (updateShiftDto.shiftEndTime) {
-      updateData.shiftEndTime = `${updateShiftDto.shiftEndTime}:00`;
+    if (updateShiftDto.shift_end_time) {
+      updateData.shift_end_time = `${updateShiftDto.shift_end_time}:00`;
     }
 
     Object.assign(shift, updateData);
@@ -155,7 +154,7 @@ export class ShiftRepository {
    */
   async remove(id: string, companyId: string) {
     const shift = await this.repository.findOne({
-      where: { id, companyId },
+      where: { id, company_id: companyId },
     });
 
     if (!shift) {
