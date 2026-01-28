@@ -1,8 +1,9 @@
 // src/modules/user/entities/user.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Company } from '../../company/entities/company.entity';
 import { MetaData } from 'src/common/entity/meta-data';
-import { UserDepartment } from 'src/modules/user-department/entities/user-department.entity';
+import { Shift } from 'src/modules/shift/entities/shift.entity';
+import { Department } from 'src/modules/department/entities/department.entity';
 
 export enum UserRole {
   OWNER = 'OWNER',
@@ -62,6 +63,36 @@ export class User extends MetaData {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @OneToMany(() => UserDepartment, userDept => userDept.user)
-  userDepartments: UserDepartment[];
+  @ManyToMany(() => Shift, shift => shift.users,{
+    //cascade: true,
+    onDelete: 'CASCADE'
+  })
+  @JoinTable({
+    name: 'user_shifts',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'shift_id',
+      referencedColumnName: 'id'
+    }
+  })
+  shifts: Shift[];
+
+  @ManyToMany(() => Department, department => department.users, {
+    onDelete: 'CASCADE'
+  })
+  @JoinTable({
+    name: 'user_departments',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'department_id',
+      referencedColumnName: 'id'
+    }
+  })
+  departments: Department[];
 }
