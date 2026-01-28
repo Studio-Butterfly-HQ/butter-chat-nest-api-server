@@ -13,26 +13,63 @@ export class ShiftRepository {
   ) {}
 
   /**
-   * Find all shifts for a company
+   * Find all shifts for a company with top 10 users (id, name and email only)
    */
   async findAll(companyId: string) {
-    return this.repository.find({
-      where: { companyId },
-      order: { createdDate: 'DESC' },
-    });
+    const shifts = await this.repository
+      .createQueryBuilder('shift')
+      .where('shift.companyId = :companyId', { companyId })
+      .orderBy('shift.createdDate', 'DESC')
+      .getMany();
+
+    // Fetch limited users for each shift
+    for (const shift of shifts) {
+      const usersQuery = await this.repository
+        .createQueryBuilder('shift')
+        .innerJoin('shift.users', 'user')
+        .select(['user.id', 'user.user_name', 'user.email'])
+        .where('shift.id = :shiftId', { shiftId: shift.id })
+        .limit(10)
+        .getRawMany();
+
+      shift.users = usersQuery.map(u => ({
+        id: u.user_id,
+        user_name: u.user_user_name,
+        email: u.user_email,
+      })) as any;
+    }
+
+    return shifts;
   }
 
   /**
-   * Find one shift by ID
+   * Find one shift by ID with top 10 users (id, name and email only)
    */
   async findOne(id: string, companyId: string) {
-    const shift = await this.repository.findOne({
-      where: { id, companyId },
-    });
+    const shift = await this.repository
+      .createQueryBuilder('shift')
+      .where('shift.id = :id', { id })
+      .andWhere('shift.companyId = :companyId', { companyId })
+      .getOne();
 
     if (!shift) {
       throw new NotFoundException('Shift not found');
     }
+
+    // Fetch top 10 users
+    const usersQuery = await this.repository
+      .createQueryBuilder('shift')
+      .innerJoin('shift.users', 'user')
+      .select(['user.id', 'user.user_name', 'user.email'])
+      .where('shift.id = :shiftId', { shiftId: shift.id })
+      .limit(10)
+      .getRawMany();
+
+    shift.users = usersQuery.map(u => ({
+      id: u.user_id,
+      user_name: u.user_user_name,
+      email: u.user_email,
+    })) as any;
 
     return shift;
   }
@@ -126,7 +163,10 @@ export class ShiftRepository {
     }
 
     await this.repository.remove(shift);
-    return { id, deleted: true };
+    return { 
+      message: 'Shift deleted successfully',
+      id 
+    };
   }
 
   /**

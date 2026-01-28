@@ -1,7 +1,8 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from 'src/common/entity/meta-data';
 import { Company } from 'src/modules/company/entities/company.entity';
+import { User } from 'src/modules/user/entities/user.entity';
 
 @Entity('shifts')
 @Index(['companyId', 'shiftName'], { unique: true })
@@ -28,4 +29,9 @@ export class Shift extends MetaData {
   })
   @JoinColumn({ name: 'companyId' })
   company: Company;
+
+  @ManyToMany(() => User, user => user.shifts,{
+    onDelete: 'CASCADE'
+  })
+  users: User[];
 }

@@ -9,7 +9,8 @@ import {
   UseGuards, 
   Req,
   HttpStatus,
-  HttpCode
+  HttpCode,
+  ParseUUIDPipe
 } from '@nestjs/common';
 import { ShiftService } from './shift.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
@@ -23,6 +24,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
+  ApiConflictResponse,
   ApiInternalServerErrorResponse
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -54,7 +56,7 @@ export class ShiftController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ 
     summary: 'Create a new shift',
-    description: 'Creates a new shift for the authenticated company'
+    description: 'Creates a new shift for the authenticated company. Shift name must be unique within the company. Start time must be before end time.'
   })
   @SwaggerApiResponse({ 
     status: HttpStatus.CREATED,
@@ -65,29 +67,41 @@ export class ShiftController {
         message: 'Shift created successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Morning Shift',
-          startTime: '09:00',
-          endTime: '17:00',
-          companyId: 'comp-123',
-          createdAt: '2024-01-26T10:30:00.000Z',
-          updatedAt: '2024-01-26T10:30:00.000Z'
+          shiftName: 'Morning Shift',
+          shiftStartTime: '09:00:00',
+          shiftEndTime: '17:00:00',
+          companyId: '550e8400-e29b-41d4-a716-446655440000',
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T10:30:00.000Z'
         },
         timestamp: '2024-01-26T10:30:00.000Z'
       }
     }
   })
   @ApiBadRequestResponse({ 
-    description: 'Bad Request - Invalid input data',
+    description: 'Bad Request - Invalid input data or shift end time must be after start time',
     schema: {
       example: {
         success: false,
-        message: 'Validation failed',
+        message: 'Shift end time must be after start time',
         error: {
-          code: 'VALIDATION_ERROR',
-          details: {
-            name: ['name should not be empty'],
-            startTime: ['startTime must be a valid time format']
-          }
+          code: 'BAD_REQUEST',
+          details: null
+        },
+        timestamp: '2024-01-26T10:30:00.000Z',
+        path: '/shift'
+      }
+    }
+  })
+  @ApiConflictResponse({
+    description: 'Conflict - Shift with this name already exists',
+    schema: {
+      example: {
+        success: false,
+        message: 'Shift with this name already exists',
+        error: {
+          code: 'CONFLICT',
+          details: null
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift'
@@ -125,7 +139,7 @@ export class ShiftController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Get all shifts',
-    description: 'Retrieves all shifts for the authenticated company'
+    description: 'Retrieves all shifts for the authenticated company with up to 10 users (id, name and email only) per shift'
   })
   @SwaggerApiResponse({ 
     status: HttpStatus.OK,
@@ -137,12 +151,24 @@ export class ShiftController {
         data: [
           {
             id: '123e4567-e89b-12d3-a456-426614174000',
-            name: 'Morning Shift',
-            startTime: '09:00',
-            endTime: '17:00',
-            companyId: 'comp-123',
-            createdAt: '2024-01-26T10:30:00.000Z',
-            updatedAt: '2024-01-26T10:30:00.000Z'
+            shiftName: 'Morning Shift',
+            shiftStartTime: '09:00:00',
+            shiftEndTime: '17:00:00',
+            companyId: '550e8400-e29b-41d4-a716-446655440000',
+            createdDate: '2024-01-26T10:30:00.000Z',
+            updatedDate: '2024-01-26T10:30:00.000Z',
+            users: [
+              {
+                id: 'user-uuid-1',
+                user_name: 'John Doe',
+                email: 'john@example.com'
+              },
+              {
+                id: 'user-uuid-2',
+                user_name: 'Jane Smith',
+                email: 'jane@example.com'
+              }
+            ]
           }
         ],
         timestamp: '2024-01-26T10:30:00.000Z'
@@ -180,7 +206,7 @@ export class ShiftController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Get shift by ID',
-    description: 'Retrieves a specific shift by its ID for the authenticated company'
+    description: 'Retrieves a specific shift by its ID for the authenticated company with up to 10 users (id, name and email only)'
   })
   @ApiParam({
     name: 'id',
@@ -197,12 +223,24 @@ export class ShiftController {
         message: 'Shift retrieved successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Morning Shift',
-          startTime: '09:00',
-          endTime: '17:00',
-          companyId: 'comp-123',
-          createdAt: '2024-01-26T10:30:00.000Z',
-          updatedAt: '2024-01-26T10:30:00.000Z'
+          shiftName: 'Morning Shift',
+          shiftStartTime: '09:00:00',
+          shiftEndTime: '17:00:00',
+          companyId: '550e8400-e29b-41d4-a716-446655440000',
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T10:30:00.000Z',
+          users: [
+            {
+              id: 'user-uuid-1',
+              user_name: 'John Doe',
+              email: 'john@example.com'
+            },
+            {
+              id: 'user-uuid-2',
+              user_name: 'Jane Smith',
+              email: 'jane@example.com'
+            }
+          ]
         },
         timestamp: '2024-01-26T10:30:00.000Z'
       }
@@ -216,7 +254,7 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: 'Shift with the specified ID does not exist'
+          details: null
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -238,9 +276,9 @@ export class ShiftController {
       }
     }
   })
-  async findOne(@Req() req, @Param('id') id: string): Promise<ApiResponse> {
+  async findOne(@Req() req, @Param('id', ParseUUIDPipe) id: string): Promise<ApiResponse> {
     const companyId = req.companyId;
-    const shift = await this.shiftService.findOne(companyId, id);
+    const shift = await this.shiftService.findOne(id, companyId);
     
     return {
       success: true,
@@ -254,7 +292,7 @@ export class ShiftController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Update shift',
-    description: 'Updates an existing shift for the authenticated company'
+    description: 'Updates an existing shift for the authenticated company. Only provided fields will be updated.'
   })
   @ApiParam({
     name: 'id',
@@ -271,28 +309,26 @@ export class ShiftController {
         message: 'Shift updated successfully',
         data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Morning Shift (Updated)',
-          startTime: '08:00',
-          endTime: '16:00',
-          companyId: 'comp-123',
-          createdAt: '2024-01-26T10:30:00.000Z',
-          updatedAt: '2024-01-26T11:45:00.000Z'
+          shiftName: 'Morning Shift (Updated)',
+          shiftStartTime: '08:00:00',
+          shiftEndTime: '16:00:00',
+          companyId: '550e8400-e29b-41d4-a716-446655440000',
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T11:45:00.000Z'
         },
         timestamp: '2024-01-26T11:45:00.000Z'
       }
     }
   })
   @ApiBadRequestResponse({ 
-    description: 'Bad Request - Invalid input data',
+    description: 'Bad Request - Invalid input data or shift end time must be after start time',
     schema: {
       example: {
         success: false,
-        message: 'Validation failed',
+        message: 'Shift end time must be after start time',
         error: {
-          code: 'VALIDATION_ERROR',
-          details: {
-            startTime: ['startTime must be a valid time format']
-          }
+          code: 'BAD_REQUEST',
+          details: null
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -307,7 +343,22 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: 'Shift with the specified ID does not exist'
+          details: null
+        },
+        timestamp: '2024-01-26T10:30:00.000Z',
+        path: '/shift/123e4567-e89b-12d3-a456-426614174000'
+      }
+    }
+  })
+  @ApiConflictResponse({
+    description: 'Conflict - Shift with this name already exists',
+    schema: {
+      example: {
+        success: false,
+        message: 'Shift with this name already exists',
+        error: {
+          code: 'CONFLICT',
+          details: null
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -329,9 +380,9 @@ export class ShiftController {
       }
     }
   })
-  async update(@Req() req, @Param('id') id: string, @Body() updateShiftDto: UpdateShiftDto): Promise<ApiResponse> {
+  async update(@Req() req, @Param('id', ParseUUIDPipe) id: string, @Body() updateShiftDto: UpdateShiftDto): Promise<ApiResponse> {
     const companyId = req.companyId;
-    const shift = await this.shiftService.update(companyId, id, updateShiftDto);
+    const shift = await this.shiftService.update(id,companyId,updateShiftDto,);
     
     return {
       success: true,
@@ -345,7 +396,7 @@ export class ShiftController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Delete shift',
-    description: 'Deletes a shift for the authenticated company'
+    description: 'Deletes a shift for the authenticated company. This will also remove all user-shift associations from the junction table due to CASCADE delete.'
   })
   @ApiParam({
     name: 'id',
@@ -361,8 +412,8 @@ export class ShiftController {
         success: true,
         message: 'Shift deleted successfully',
         data: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          deleted: true
+          message: 'Shift deleted successfully',
+          id: '123e4567-e89b-12d3-a456-426614174000'
         },
         timestamp: '2024-01-26T10:30:00.000Z'
       }
@@ -376,7 +427,7 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: 'Shift with the specified ID does not exist'
+          details: null
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -398,9 +449,9 @@ export class ShiftController {
       }
     }
   })
-  async remove(@Req() req, @Param('id') id: string): Promise<ApiResponse> {
+  async remove(@Req() req, @Param('id', ParseUUIDPipe) id: string): Promise<ApiResponse> {
     const companyId = req.companyId;
-    const result = await this.shiftService.remove(companyId, id);
+    const result = await this.shiftService.remove(id, companyId);
     
     return {
       success: true,
