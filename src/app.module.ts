@@ -47,7 +47,7 @@ import { Shift } from './modules/shift/entities/shift.entity';
          password:configService.get('DB_PASSWORD'),
          database:configService.get('DB_DATABASE'),
          entities:[
-          Company,User,Department,UserDepartment,PasswordResetToken,
+          Company,User,Department,PasswordResetToken,
           Conversation,Message,ConversationTag,ConversationSummary,
           SocialConnection,PendingUser,Shift
         ],
@@ -66,7 +66,6 @@ import { Shift } from './modules/shift/entities/shift.entity';
      UserModule,
      DepartmentModule,
      CompanyModule,
-     UserDepartmentModule,
      MailModule, 
      FileHandleModule,
      MessengerFactoryModule,
