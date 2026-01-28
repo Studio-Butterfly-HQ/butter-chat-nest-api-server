@@ -10,10 +10,11 @@ import { AuthRepository } from './auth.repository';
 import { Company } from '../company/entities/company.entity';
 import { User } from '../user/entities/user.entity';
 import { JwtStrategy } from 'src/common/strategies/jwt.strategy';
+import { Department } from '../department/entities/department.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Company, User]), //Only Company and User
+    TypeOrmModule.forFeature([Company, User, Department]), //Only Company and User
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

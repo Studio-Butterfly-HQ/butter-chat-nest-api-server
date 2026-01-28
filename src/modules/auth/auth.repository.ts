@@ -7,16 +7,20 @@ import { User, UserRole } from '../user/entities/user.entity';
 import { LoginAuthDto } from './dto/login.dto';
 import { RegisterCompanyDto } from './dto/registration.dto';
 import * as bcrypt from 'bcrypt';
+import { Department } from '../department/entities/department.entity';
 
 @Injectable()
 export class AuthRepository {
   constructor(
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
+
+    @InjectRepository(Department)
+    private departmentRepository: Repository<Department>,
     
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    
+
     private dataSource: DataSource,
   ) {}
 
@@ -51,6 +55,16 @@ export class AuthRepository {
       });
       const savedCompany = await queryRunner.manager.save(Company, company);
 
+      // default admistration department
+      const department = queryRunner.manager.create(Department,{
+        company_id:savedCompany.id,
+        department_name:"Administration",
+        department_profile_uri:"https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg",
+        description:"Admistration board of the company",
+        employee_count:1
+      })
+      const savedDepartment = await queryRunner.manager.save(department)
+
       // 2. Hash password and create User (Owner)
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(registerDto.password, saltRounds);
@@ -61,9 +75,9 @@ export class AuthRepository {
         email: registerDto.email,
         password: hashedPassword,
         role: UserRole.OWNER,
+        departments:[savedDepartment]
       });
       const savedUser = await queryRunner.manager.save(User, user);
-
       // Commit transaction
       await queryRunner.commitTransaction();
 
