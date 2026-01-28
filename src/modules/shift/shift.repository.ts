@@ -19,7 +19,7 @@ export class ShiftRepository {
     const shifts = await this.repository
       .createQueryBuilder('shift')
       .where('shift.company_id = :companyId', { companyId })
-      .orderBy('shift.created_date', 'DESC')
+      .orderBy('shift.createdDate', 'DESC')
       .getMany();
 
     // Fetch limited users for each shift
