@@ -13,8 +13,35 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard) 
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get()
-  async func(){
-    return 'hello world'
+  /*
+    todos:
+    1. add a new user         ->  post request
+    2. add multiple user      ->  post request
+
+    3. get all users          ->  get request
+    4. get a single user      ->  get request
+    5. get all users with department
+
+    5. remove a user          ->  delete requst
+    6. remove multiple users  ->  delete request
+
+  */
+
+  //----add single user----//
+  @Post('single')
+  async addOneUser(){
+
   }
+
+  //----add multiple user----//
+  @Post('multiple')
+  async addMultipleUser(){
+
+  }
+
+  @Get()
+  async userListWithDepartment(){
+      
+  }
+
 }

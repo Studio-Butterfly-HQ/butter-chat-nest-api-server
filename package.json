@@ -39,7 +39,7 @@
     "cookie-parser": "^1.4.7",
     "lodash": "^4.17.23",
     "mysql2": "^3.16.0",
-    "nodemailer": "^7.0.12",
+    "nodemailer": "^7.0.13",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",

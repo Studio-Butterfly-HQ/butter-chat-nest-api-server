@@ -5,6 +5,7 @@ import { Department } from '../../department/entities/department.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 import { SocialConnection } from 'src/modules/meta_business_connection/entity/social-connection.entity';
 import { Shift } from 'src/modules/shift/entities/shift.entity';
+import { AiAgent } from 'src/modules/ai-agents/entities/ai-agent.entity';
 
 export enum CompanyStatus {
   ACTIVE = 'ACTIVE',
@@ -65,4 +66,7 @@ export class Company extends MetaData {
 
   @OneToMany(() => SocialConnection, socialConnection => socialConnection.company)
   socialConnections: SocialConnection[];
+
+  @OneToMany(() => AiAgent, (aiAgent) => aiAgent.company)
+  ai_agents: AiAgent[];
 }

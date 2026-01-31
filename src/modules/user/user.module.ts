@@ -15,8 +15,8 @@ import { MailModule } from '../mail/mail.module';
   imports: [
     TypeOrmModule.forFeature([
       User, 
-      PasswordResetToken, 
-      UserDepartment, 
+      PasswordResetToken,
+      UserDepartment,
       Department, 
       Company
     ]),
