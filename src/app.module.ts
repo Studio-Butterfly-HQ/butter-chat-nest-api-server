@@ -27,6 +27,9 @@ import { SocialConnection } from './modules/meta_business_connection/entity/soci
 import { PendingUser } from './modules/user/entities/pending-user.entity';
 import { ShiftModule } from './modules/shift/shift.module';
 import { Shift } from './modules/shift/entities/shift.entity';
+import { WeburiResourcesModule } from './weburi-resources/weburi-resources.module';
+import { WeburiResource } from './weburi-resources/entities/weburi-resource.entity';
+import { AiAgent } from './modules/ai-agents/entities/ai-agent.entity';
 
 @Module({
   imports: [
@@ -49,7 +52,8 @@ import { Shift } from './modules/shift/entities/shift.entity';
          entities:[
           Company,User,Department,PasswordResetToken,
           Conversation,Message,ConversationTag,ConversationSummary,
-          SocialConnection,PendingUser,Shift
+          SocialConnection,PendingUser,Shift,WeburiResource,
+          AiAgent
         ],
         synchronize:true,
          //logging:true
@@ -72,6 +76,7 @@ import { Shift } from './modules/shift/entities/shift.entity';
     //MessengerBullMQProducerModule,
     MetaBusinessModule,
     ShiftModule,
+    WeburiResourcesModule,
   ],
   controllers: [],
   providers: [],
