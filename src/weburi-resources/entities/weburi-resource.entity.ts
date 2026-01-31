@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { Company } from 'src/modules/company/entities/company.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 
@@ -9,6 +9,7 @@ export enum WeburiResourceStatus {
 }
 
 @Entity('weburi_resources')
+@Unique(['uri', 'company_id'])
 export class WeburiResource extends MetaData {
   @PrimaryGeneratedColumn('uuid')
   id: string;

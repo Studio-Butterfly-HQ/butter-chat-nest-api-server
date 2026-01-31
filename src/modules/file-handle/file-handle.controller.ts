@@ -195,7 +195,7 @@ export class DocumentsController {
       'Content-Type': documentInfo.mimetype,
       'Content-Disposition': `inline; filename="${documentInfo.originalName}"`,
       'Content-Length': documentInfo.size,
-      'X-Company-Id': companyId, // Optional: for debugging
+      'X-Company-Id': companyId,
     });
 
     // Stream the file
