@@ -30,6 +30,7 @@ import { Shift } from './modules/shift/entities/shift.entity';
 import { WeburiResourcesModule } from './weburi-resources/weburi-resources.module';
 import { WeburiResource } from './weburi-resources/entities/weburi-resource.entity';
 import { AiAgent } from './modules/ai-agents/entities/ai-agent.entity';
+import { AiAgentsModule } from './modules/ai-agents/ai-agents.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { AiAgent } from './modules/ai-agents/entities/ai-agent.entity';
      UserModule,
      DepartmentModule,
      CompanyModule,
+     AiAgentsModule,
      MailModule, 
      FileHandleModule,
      MessengerFactoryModule,
