@@ -6,6 +6,7 @@ import { MetaData } from 'src/common/entity/meta-data';
 import { SocialConnection } from 'src/modules/meta_business_connection/entity/social-connection.entity';
 import { Shift } from 'src/modules/shift/entities/shift.entity';
 import { AiAgent } from 'src/modules/ai-agents/entities/ai-agent.entity';
+import { PendingUser } from 'src/modules/user/entities/pending-user.entity';
 import { WeburiResource } from 'src/weburi-resources/entities/weburi-resource.entity';
 
 export enum CompanyStatus {
@@ -58,6 +59,9 @@ export class Company extends MetaData {
   // Relations
   @OneToMany(() => User, user => user.company)
   users: User[];
+
+  @OneToMany(() => PendingUser, pendingUser => pendingUser.company)
+  pending_users: PendingUser[];
 
   @OneToMany(() => Department, department => department.company)
   departments: Department[];

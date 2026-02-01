@@ -10,6 +10,7 @@ import { UserDepartment } from '../user-department/entities/user-department.enti
 import { Department } from '../department/entities/department.entity';
 import { Company } from '../company/entities/company.entity';
 import { MailModule } from '../mail/mail.module';
+import { PendingUser } from './entities/pending-user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -20,7 +21,8 @@ import { JwtModule } from '@nestjs/jwt';
       PasswordResetToken,
       UserDepartment,
       Department, 
-      Company
+      Company,
+      PendingUser
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
