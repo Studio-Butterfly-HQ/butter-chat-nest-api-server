@@ -10,6 +10,8 @@ import { UserDepartment } from '../user-department/entities/user-department.enti
 import { Department } from '../department/entities/department.entity';
 import { Company } from '../company/entities/company.entity';
 import { MailModule } from '../mail/mail.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -20,6 +22,16 @@ import { MailModule } from '../mail/mail.module';
       Department, 
       Company
     ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'user_invitation_token',
+        signOptions: {
+          expiresIn: '30m',
+        },
+      }),
+      inject: [ConfigService],
+    }),
     MailModule
   ],
   controllers: [UserController],

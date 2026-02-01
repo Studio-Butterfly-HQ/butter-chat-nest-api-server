@@ -48,8 +48,8 @@ export class PendingUser extends MetaData {
   @Column({
     type: 'varchar',
     length: 255,
-    nullable: true,
+    nullable: false,
     comment: 'Invitation token or verification token',
   })
-  invite_token?: string;
+  invite_token: string;
 }

@@ -12,11 +12,39 @@ import { Department } from '../department/entities/department.entity';
 import { Company } from '../company/entities/company.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { MailService } from '../mail/mail.service';
+import { PendingUserDto } from './dto/pending-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
+    private readonly jwtService: JwtService
+
   ) {}
+
+  async InviteUser(inviteUser: PendingUserDto,companyId:string){
+    try{
+      const payload = {
+        sub: inviteUser.email,
+        companyId: companyId,
+        departmentId:inviteUser.department_id,
+        role: inviteUser.role,
+      };
+      
+      let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+      await this.mailService.sendInvitationEmail(
+        inviteUser.email,
+        invitationToken,
+        'Studio Butterfly'
+      )
+      await this.userRepository.InviteUser(inviteUser,companyId)
+    }catch(err){
+      console.log('error occured for sending mail',err)
+      throw err
+    }
+  }
 }

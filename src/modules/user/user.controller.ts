@@ -1,11 +1,12 @@
 // src/modules/user/user.controller.ts
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request, Get } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request, Get, Req, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ResponseUtil } from '../../common/utils/response.util';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { PendingUserDto } from './dto/pending-user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -24,8 +25,15 @@ export class UserController {
 
     5. remove a user          ->  delete requst
     6. remove multiple users  ->  delete request
-
+    7. invite user 
   */
+
+  //invite user
+  @Post('invite')
+  async InviteUser(@Req() req, @Body() inviteUser: PendingUserDto){
+    console.log('user invitation controller')
+    this.userService.InviteUser(inviteUser,req.companyId)
+  }
 
   //----add single user----//
   @Post('single')
@@ -36,6 +44,11 @@ export class UserController {
   //----add multiple user----//
   @Post('multiple')
   async addMultipleUser(){
+
+  }
+
+  @Patch()
+  async updateUser(){
 
   }
 

@@ -2,13 +2,24 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { PendingUserDto } from './dto/pending-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
-  constructor(private dataSource: DataSource) {
+  constructor(
+    private dataSource: DataSource,
+  ) {
     super(User, dataSource.createEntityManager());
   }
 
+  //save pending invited users data.............................
+  async InviteUser(inviteUser: PendingUserDto,companyId:string){
+      console.log("saving the user to pending list")
+  }
+  
+  
+  
   async findByEmail(email: string): Promise<User | null> {
     return this.findOne({
       where: { email },
