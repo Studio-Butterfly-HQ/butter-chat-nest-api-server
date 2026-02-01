@@ -10,6 +10,7 @@ import { UserDepartment } from '../user-department/entities/user-department.enti
 import { Department } from '../department/entities/department.entity';
 import { Company } from '../company/entities/company.entity';
 import { MailModule } from '../mail/mail.module';
+import { PendingUser } from './entities/pending-user.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { MailModule } from '../mail/mail.module';
       PasswordResetToken,
       UserDepartment,
       Department, 
-      Company
+      Company,
+      PendingUser
     ]),
     MailModule
   ],

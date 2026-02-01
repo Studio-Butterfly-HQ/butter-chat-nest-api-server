@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from 'src/common/entity/meta-data';
 import { Company } from 'src/modules/company/entities/company.entity';
 import { User } from 'src/modules/user/entities/user.entity';
+import { PendingUser } from 'src/modules/user/entities/pending-user.entity';
 
 @Entity('shifts')
 @Index(['company_id', 'shift_name'], { unique: true })
@@ -34,4 +35,9 @@ export class Shift extends MetaData {
     onDelete: 'CASCADE'
   })
   users: User[];
+
+  @ManyToMany(() => PendingUser, pendingUser => pendingUser.shifts, {
+    onDelete: 'CASCADE'
+  })
+  pending_users: PendingUser[];
 }

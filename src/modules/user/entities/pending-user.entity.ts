@@ -6,9 +6,16 @@ import {
   PrimaryGeneratedColumn,
   Unique,
   Index,
+  ManyToOne,
+  JoinColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { UserRole } from './user.entity';
 import { MetaData } from 'src/common/entity/meta-data';
+import { Company } from 'src/modules/company/entities/company.entity';
+import { Shift } from 'src/modules/shift/entities/shift.entity';
+import { Department } from 'src/modules/department/entities/department.entity';
 
 export enum PendingUserStatus {
   PENDING = 'PENDING',
@@ -26,30 +33,56 @@ export class PendingUser extends MetaData {
   @Column({ length: 50 })
   email: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
+  @Column({ type: 'uuid' })
+  department_id: string;
+
+  @Column({ type: 'uuid' })
+  shift_id: string;
+
   @Column({
     type: 'enum',
     enum: UserRole,
   })
   role: UserRole;
 
-  @Column({ type: 'uuid' })
-  department_id: string;
-
-  @Column({ type: 'uuid' })
-  company_id: string;
-
-  @Column({
-    type: 'enum',
-    enum: PendingUserStatus,
-    default: PendingUserStatus.PENDING,
+  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
+  
+  @ManyToMany(() => Department, department => department.pending_users, {
+      onDelete: 'CASCADE'
   })
-  status: PendingUserStatus;
-
-  @Column({
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-    comment: 'Invitation token or verification token',
+  @JoinTable({
+    name: 'pending_user_departments',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'department_id',
+      referencedColumnName: 'id'
+    }
   })
-  invite_token?: string;
+  departments: Department[];
+
+    @ManyToMany(() => Shift, shift => shift.pending_users,{
+      //cascade: true,
+      onDelete: 'CASCADE'
+    })
+    @JoinTable({
+      name: 'pending_user_shifts',
+      joinColumn: {
+        name: 'user_id',
+        referencedColumnName: 'id'
+      },
+      inverseJoinColumn: {
+        name: 'shift_id',
+        referencedColumnName: 'id'
+      }
+    })
+    shifts: Shift[];
+  
 }
