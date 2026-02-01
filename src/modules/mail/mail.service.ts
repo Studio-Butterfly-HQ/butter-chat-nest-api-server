@@ -11,7 +11,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('MAIL_HOST'),
       port: this.configService.get('MAIL_PORT'),
-      secure: false, // true for 465, false for other ports
+      secure: true, // true for 465, false for other ports
       auth: {
         user: this.configService.get('MAIL_USER'),
         pass: this.configService.get('MAIL_PASSWORD'),
@@ -19,29 +19,25 @@ export class MailService {
     });
   }
 
-  async sendWelcomeEmail(
+  async sendInvitationEmail(
     email: string,
-    userName: string,
-    temporaryPassword: string,
-    resetToken: string,
+    inviteToken: string,
     companyName: string
   ) {
-    const resetUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${resetToken}`;
+    const resetUrl = `${this.configService.get('FRONTEND_EMPLOYEE_INVITE_URL')}?token=${inviteToken}`;
     
     const mailOptions = {
       from: `"${this.configService.get('MAIL_FROM_NAME')}" <${this.configService.get('MAIL_FROM_ADDRESS')}>`,
       to: email,
       subject: `Welcome to ${companyName} - Account Created`,
-      html: this.getWelcomeEmailTemplate(userName, email, temporaryPassword, resetUrl, companyName),
+      html: this.getWelcomeEmailTemplate(email,resetUrl, companyName),
     };
 
     await this.transporter.sendMail(mailOptions);
   }
 
   private getWelcomeEmailTemplate(
-    userName: string,
     email: string,
-    password: string,
     resetUrl: string,
     companyName: string
   ): string {
@@ -132,32 +128,8 @@ export class MailService {
         </div>
         
         <div class="content">
-          <p>Hello <strong>${userName}</strong>,</p>
           
-          <p>Your account has been created successfully. Below are your login credentials:</p>
-          
-          <div class="credentials-box">
-            <h3>🔐 Login Credentials</h3>
-            <div class="credential-item">
-              <span class="credential-label">Email:</span>
-              <span class="credential-value">${email}</span>
-            </div>
-            <div class="credential-item">
-              <span class="credential-label">Temporary Password:</span>
-              <span class="credential-value">${password}</span>
-            </div>
-          </div>
-          
-          <div class="warning-box">
-            <strong>⚠️ Important Security Notice:</strong>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-              <li>This is a temporary password</li>
-              <li>We strongly recommend changing it immediately</li>
-              <li>The reset password link below is valid for <strong>24 hours</strong></li>
-              <li>Never share your password with anyone</li>
-            </ul>
-          </div>
-          
+          <p>Your account is pending list</p>   
           <div style="text-align: center;">
             <a href="${resetUrl}" class="reset-button">
               Reset Password Now
