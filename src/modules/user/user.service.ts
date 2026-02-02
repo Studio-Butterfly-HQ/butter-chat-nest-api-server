@@ -40,11 +40,12 @@ export class UserService {
       
       let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
-      await this.mailService.sendInvitationEmail(
+      let res = await this.mailService.sendInvitationEmail(
         savedInvitedUser.email,
         invitationToken,
         'Studio Butterfly'
       )
+      return res
     }catch(err){
       console.log('error occured for sending mail',err)
       throw err
