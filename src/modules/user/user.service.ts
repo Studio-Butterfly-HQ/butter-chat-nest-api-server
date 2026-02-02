@@ -31,11 +31,6 @@ export class UserService {
       let savedInvitedUser = await this.userRepository.saveInvitedUser(inviteUser,companyId)
       const payload = {
         sub: savedInvitedUser.id,
-        // email:savedInvitedUser.email,
-        // companyId: companyId,
-        // departmentId:savedInvitedUser.department_id,
-        // shiftId:savedInvitedUser.shift_id,
-        // role: savedInvitedUser.role,
       };
       
       let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });

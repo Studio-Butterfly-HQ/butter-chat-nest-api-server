@@ -76,6 +76,8 @@ export class UserRepository {
         profile_uri: invitedUserRegDto.profile_uri,
         bio:invitedUserRegDto.bio,
         role:pendingUser.role,
+        departments:pendingUser.departments,
+        shifts:pendingUser.shifts,
       });
 
       // 3. Save the user
