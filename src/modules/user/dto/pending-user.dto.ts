@@ -30,4 +30,8 @@ export class PendingUserDto {
   @IsNotEmpty()
   @IsUUID()
   department_id: string;
+
+  @IsNotEmpty()
+  @IsUUID()
+  shift_id: string;
 }

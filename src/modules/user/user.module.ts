@@ -13,6 +13,8 @@ import { MailModule } from '../mail/mail.module';
 import { PendingUser } from './entities/pending-user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { JwtInvitedUserRegStrategy } from './guards/invited-user-reg.strategy';
 
 @Module({
   imports: [
@@ -37,7 +39,7 @@ import { JwtModule } from '@nestjs/jwt';
     MailModule
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository],
+  providers: [UserService, UserRepository, JwtInvitedUserRegStrategy],
   exports: [UserService, UserRepository]
 })
 export class UserModule {}

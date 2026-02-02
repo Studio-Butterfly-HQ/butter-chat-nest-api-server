@@ -7,11 +7,13 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ResponseUtil } from '../../common/utils/response.util';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { PendingUserDto } from './dto/pending-user.dto';
+import { InvitedUserRegDto } from './dto/invited-registration.dto';
+import { InvitedUserRegGuard } from './guards/invited-user-reg.guard';
 
 @ApiTags('users')
 @Controller('users')
-@ApiBearerAuth() 
-@UseGuards(JwtAuthGuard) 
+// @ApiBearerAuth() 
+// @UseGuards(JwtAuthGuard) 
 export class UserController {
   constructor(private readonly userService: UserService) {}
   /*
@@ -29,16 +31,20 @@ export class UserController {
   */
 
   //invite user
+  @UseGuards(JwtAuthGuard)
   @Post('invite')
   async InviteUser(@Req() req, @Body() inviteUser: PendingUserDto){
     console.log('user invitation controller')
-    this.userService.InviteUser(inviteUser,req.companyId)
+    let res = this.userService.InviteUser(inviteUser,req.companyId)
+    return res
   }
 
   //----add single user----//
-  @Post('single')
-  async addOneUser(){
-
+  @UseGuards(InvitedUserRegGuard)
+  @Post('registration')
+  async registerInvitedUser(@Req()req,@Body() invitedUserRegDto:InvitedUserRegDto){
+    console.log(req.user)
+    return this.userService.registerInvitedUser(invitedUserRegDto,req.user.userId)
   }
 
   //----add multiple user----//

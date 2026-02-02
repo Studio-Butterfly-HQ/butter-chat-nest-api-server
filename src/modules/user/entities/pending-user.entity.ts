@@ -11,11 +11,17 @@ import {
   ManyToMany,
   JoinTable,
 } from 'typeorm';
-import { UserRole } from './user.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 import { Company } from 'src/modules/company/entities/company.entity';
 import { Shift } from 'src/modules/shift/entities/shift.entity';
 import { Department } from 'src/modules/department/entities/department.entity';
+
+export enum UserRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  EMPLOYEE = 'EMPLOYEE',
+  GUEST = 'GUEST'
+}
 
 export enum PendingUserStatus {
   PENDING = 'PENDING',

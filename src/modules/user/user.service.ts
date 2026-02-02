@@ -14,6 +14,7 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { MailService } from '../mail/mail.service';
 import { PendingUserDto } from './dto/pending-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { InvitedUserRegDto } from './dto/invited-registration.dto';
 
 @Injectable()
 export class UserService {
@@ -27,24 +28,31 @@ export class UserService {
 
   async InviteUser(inviteUser: PendingUserDto,companyId:string){
     try{
+      let savedInvitedUser = await this.userRepository.saveInvitedUser(inviteUser,companyId)
       const payload = {
-        sub: inviteUser.email,
-        companyId: companyId,
-        departmentId:inviteUser.department_id,
-        role: inviteUser.role,
+        sub: savedInvitedUser.id,
+        // email:savedInvitedUser.email,
+        // companyId: companyId,
+        // departmentId:savedInvitedUser.department_id,
+        // shiftId:savedInvitedUser.shift_id,
+        // role: savedInvitedUser.role,
       };
       
       let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
       await this.mailService.sendInvitationEmail(
-        inviteUser.email,
+        savedInvitedUser.email,
         invitationToken,
         'Studio Butterfly'
       )
-      await this.userRepository.InviteUser(inviteUser,companyId)
     }catch(err){
       console.log('error occured for sending mail',err)
       throw err
     }
+  }
+
+  //register invited user 
+  async registerInvitedUser(invitedUserRegDto:InvitedUserRegDto,invitationData:string){
+    return this.userRepository.registerInvitedUser(invitedUserRegDto,invitationData)
   }
 }
