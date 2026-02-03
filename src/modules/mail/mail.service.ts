@@ -45,115 +45,67 @@ export class MailService {
       <!DOCTYPE html>
       <html>
       <head>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .header {
-            background-color: #4F46E5;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 5px 5px 0 0;
-          }
-          .content {
-            background-color: #f9f9f9;
-            padding: 30px;
-            border: 1px solid #ddd;
-            border-top: none;
-          }
-          .credentials-box {
-            background-color: #fff;
-            border: 2px solid #4F46E5;
-            border-radius: 5px;
-            padding: 20px;
-            margin: 20px 0;
-          }
-          .credentials-box h3 {
-            margin-top: 0;
-            color: #4F46E5;
-          }
-          .credential-item {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f3f4f6;
-            border-radius: 3px;
-          }
-          .credential-label {
-            font-weight: bold;
-            color: #666;
-            display: block;
-            margin-bottom: 5px;
-          }
-          .credential-value {
-            font-family: 'Courier New', monospace;
-            color: #1f2937;
-            font-size: 16px;
-          }
-          .reset-button {
-            display: inline-block;
-            background-color: #4F46E5;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
-          }
-          .reset-button:hover {
-            background-color: #4338CA;
-          }
-          .warning-box {
-            background-color: #FEF3C7;
-            border-left: 4px solid #F59E0B;
-            padding: 15px;
-            margin: 20px 0;
-          }
-          .footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 12px;
-          }
-        </style>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body>
-        <div class="header">
-          <h1>Welcome to ${companyName}!</h1>
-        </div>
-        
-        <div class="content">
-          
-          <p>Your account is pending list</p>   
-          <div style="text-align: center;">
-            <a href="${resetUrl}" class="reset-button">
-              Reset Password Now
-            </a>
-          </div>
-          
-          <p style="margin-top: 30px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 3px;">
-            ${resetUrl}
-          </p>
-          
-          <p style="margin-top: 30px;">
-            If you didn't expect this email or have any questions, please contact your administrator.
-          </p>
-          
-          <p>Best regards,<br><strong>${companyName} Team</strong></p>
-        </div>
-        
-        <div class="footer">
-          <p>This is an automated message, please do not reply to this email.</p>
-          <p>&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
-        </div>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background-color: #f5f5f7;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f7; padding: 40px 20px;">
+              <tr>
+                  <td align="center">
+                      <table width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                          <!-- Header -->
+                          <tr>
+                              <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                  <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">You're Invited!</h1>
+                              </td>
+                          </tr>
+                          
+                          <!-- Body -->
+                          <tr>
+                              <td style="padding: 40px;">
+                                  <p style="margin: 0 0 20px; color: #1d1d1f; font-size: 16px; line-height: 1.6;">
+                                      Hi <strong>${email}</strong>,
+                                  </p>
+                                  
+                                  <p style="margin: 0 0 20px; color: #1d1d1f; font-size: 16px; line-height: 1.6;">
+                                      You've been invited to join <strong>${companyName}</strong> on our AI-powered platform. Let's collaborate and build something amazing together.
+                                  </p>
+                                  
+                                  <p style="margin: 0 0 30px; color: #86868b; font-size: 14px; line-height: 1.6;">
+                                      Click the button below to accept your invitation and set up your account.
+                                  </p>
+                                  
+                                  <!-- CTA Button -->
+                                  <table width="100%" cellpadding="0" cellspacing="0">
+                                      <tr>
+                                          <td align="center" style="padding: 20px 0;">
+                                              <a href="${resetUrl}" style="display: inline-block; padding: 14px 32px; background-color: #667eea; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 500;">
+                                                  Accept Invitation
+                                              </a>
+                                          </td>
+                                      </tr>
+                                  </table>
+                                  
+                                  <p style="margin: 30px 0 0; color: #86868b; font-size: 13px; line-height: 1.6;">
+                                      Or copy and paste this link into your browser:<br>
+                                      <a href="${resetUrl}" style="color: #667eea; word-break: break-all;">${resetUrl}</a>
+                                  </p>
+                              </td>
+                          </tr>
+                          
+                          <!-- Footer -->
+                          <tr>
+                              <td style="padding: 30px 40px; background-color: #f9f9f9; border-top: 1px solid #e5e5e7;">
+                                  <p style="margin: 0; color: #86868b; font-size: 12px; line-height: 1.5; text-align: center;">
+                                      This invitation expires in 7 days.<br>
+                                      If you didn't expect this invitation, you can safely ignore this email.
+                                  </p>
+                              </td>
+                          </tr>
+                      </table>
+                  </td>
+              </tr>
+          </table>
       </body>
       </html>
     `;
