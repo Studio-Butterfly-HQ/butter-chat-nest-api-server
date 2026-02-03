@@ -32,7 +32,7 @@ export class UserService {
       const payload = {
         sub: savedInvitedUser.id,
       };
-      
+      console.log(savedInvitedUser,"saved user info up")
       let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
       this.mailService.sendInvitationEmail(
@@ -43,7 +43,7 @@ export class UserService {
       return savedInvitedUser.email
     }catch(err){
       console.log('error occured for sending mail',err)
-      throw err
+      throw new err
     }
   }
 

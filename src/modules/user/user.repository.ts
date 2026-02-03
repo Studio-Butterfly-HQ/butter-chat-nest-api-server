@@ -50,16 +50,19 @@ export class UserRepository {
   }
 
   //..register invited user...///
-  async registerInvitedUser(invitedUserRegDto: InvitedUserRegDto, invitationData: string) {
+  async registerInvitedUser(
+    invitedUserRegDto: InvitedUserRegDto,
+    invitationData: string,
+  ) {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 1. Fetch the pending user with their relations
+      // 1. Fetch pending user with relations
       const pendingUser = await queryRunner.manager.findOne(PendingUser, {
-        where: { id: invitationData }, // invitationData = pending user's uuid from the guard
+        where: { id: invitationData },
         relations: ['departments', 'shifts'],
       });
 
@@ -67,26 +70,42 @@ export class UserRepository {
         throw new NotFoundException('Invitation not found or already used');
       }
 
-      // 2. Create the new User entity 
+      // 2. Create user entity (NO relations here)
       const newUser = queryRunner.manager.create(User, {
-        company_id:pendingUser.company_id,
-        user_name:invitedUserRegDto.user_name,
-        email:pendingUser.email,
-        password:await bcrypt.hash(invitedUserRegDto.password, 10),
+        company_id: pendingUser.company_id,
+        user_name: invitedUserRegDto.user_name,
+        email: pendingUser.email,
+        password: await bcrypt.hash(invitedUserRegDto.password, 10),
         profile_uri: invitedUserRegDto.profile_uri,
-        bio:invitedUserRegDto.bio,
-        role:pendingUser.role,
-        departments:pendingUser.departments,
-        shifts:pendingUser.shifts,
+        bio: invitedUserRegDto.bio,
+        role: pendingUser.role,
       });
 
-      // 3. Save the user
+      // 3. Save user first
       const savedUser = await queryRunner.manager.save(User, newUser);
 
-      // 4. Remove the pending user record
+      // 4. Attach departments (join table insert)
+      if (pendingUser.departments?.length) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(User, 'departments')
+          .of(savedUser.id)
+          .add(pendingUser.departments.map(dep => dep.id));
+      }
+
+      // 5. Attach shifts (join table insert)
+      if (pendingUser.shifts?.length) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(User, 'shifts')
+          .of(savedUser.id)
+          .add(pendingUser.shifts.map(shift => shift.id));
+      }
+
+      // 6. Remove pending user
       await queryRunner.manager.remove(PendingUser, pendingUser);
 
-      // 5. Commit
+      // 7. Commit transaction
       await queryRunner.commitTransaction();
 
       return savedUser;
@@ -97,6 +116,7 @@ export class UserRepository {
       await queryRunner.release();
     }
   }
+
 
   //-----------------------------------------------------------------------------------------------///
 
