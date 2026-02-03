@@ -97,7 +97,7 @@ export class MailService {
                           <tr>
                               <td style="padding: 30px 40px; background-color: #f9f9f9; border-top: 1px solid #e5e5e7;">
                                   <p style="margin: 0; color: #86868b; font-size: 12px; line-height: 1.5; text-align: center;">
-                                      This invitation expires in 7 days.<br>
+                                      This invitation expires in 1 hour.<br>
                                       If you didn't expect this invitation, you can safely ignore this email.
                                   </p>
                               </td>
