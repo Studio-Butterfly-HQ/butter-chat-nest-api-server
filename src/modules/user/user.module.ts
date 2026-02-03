@@ -15,6 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtInvitedUserRegStrategy } from './guards/invited-user-reg.strategy';
+import { Shift } from '../shift/entities/shift.entity';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { JwtInvitedUserRegStrategy } from './guards/invited-user-reg.strategy';
       UserDepartment,
       Department, 
       Company,
-      PendingUser
+      PendingUser,
+      Shift
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
