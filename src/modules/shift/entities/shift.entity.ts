@@ -28,7 +28,7 @@ export class Shift extends MetaData {
   @ManyToOne(() => Company, (company) => company.shifts, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'companyId' })
+  @JoinColumn({ name: 'company_id' })
   company: Company;
 
   @ManyToMany(() => User, user => user.shifts,{
