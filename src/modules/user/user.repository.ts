@@ -1,11 +1,13 @@
 // src/modules/user/user.repository.ts
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PendingUser } from './entities/pending-user.entity';
 import { PendingUserDto } from './dto/pending-user.dto';
 import { InvitedUserRegDto } from './dto/invited-registration.dto';
+import { Department } from '../department/entities/department.entity';
+import { Shift } from '../shift/entities/shift.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -16,37 +18,85 @@ export class UserRepository {
     private readonly invitedUserRepository: Repository<PendingUser>,
 
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
+
+    @InjectRepository(Shift)
+    private readonly shiftRepository: Repository<Shift>,
   ) {}
 
   //------check and save invited user-----///
   async saveInvitedUser(pendingUserDto: PendingUserDto, companyId: string) {
-    const [existingUser, existingPendingUser] = await Promise.all([
-      this.userRepository.findOne({
-        where: { email: pendingUserDto.email, company_id: companyId },
-      }),
-      this.invitedUserRepository.findOne({
-        where: { email: pendingUserDto.email, company_id: companyId },
-      }),
-    ]);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (existingUser) {
-      throw new ConflictException('Email already registered as a user');
+    try {
+      // Check for existing user or pending user
+      const [existingUser, existingPendingUser] = await Promise.all([
+        this.userRepository.findOne({
+          where: { email: pendingUserDto.email, company_id: companyId },
+        }),
+        this.invitedUserRepository.findOne({
+          where: { email: pendingUserDto.email, company_id: companyId },
+        }),
+      ]);
+
+      if (existingUser) {
+        throw new ConflictException('Email already registered as a user');
+      }
+
+      if (existingPendingUser) {
+        throw new ConflictException('Invitation already sent for this email');
+      }
+
+      // Fetch departments and shifts
+      const departments = await queryRunner.manager.find(Department, {
+        where: { 
+          id: In(pendingUserDto.department_ids),
+          company_id: companyId 
+        },
+      });
+
+      const shifts = await queryRunner.manager.find(Shift, {
+        where: { 
+          id: In(pendingUserDto.shift_ids),
+          company_id: companyId 
+        },
+      });
+
+      if (departments.length !== pendingUserDto.department_ids.length) {
+        throw new NotFoundException('One or more departments not found');
+      }
+
+      if (shifts.length !== pendingUserDto.shift_ids.length) {
+        throw new NotFoundException('One or more shifts not found');
+      }
+
+      // Create pending user with relations
+      const pendingUser = queryRunner.manager.create(PendingUser, {
+        email: pendingUserDto.email,
+        role: pendingUserDto.role,
+        company_id: companyId,
+        departments,  // Assign the actual entities
+        shifts,       // Assign the actual entities
+      });
+
+      const savedPendingUser = await queryRunner.manager.save(PendingUser, pendingUser);
+
+      await queryRunner.commitTransaction();
+
+      console.log('saved user info up', savedPendingUser);
+      
+      return savedPendingUser;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    if (existingPendingUser) {
-      throw new ConflictException('Invitation already sent for this email');
-    }
-
-    const pendingUser = this.invitedUserRepository.create({
-      email: pendingUserDto.email,
-      role: pendingUserDto.role,
-      company_id: companyId,
-      department_id: pendingUserDto.department_id,
-      shift_id: pendingUserDto.shift_id,
-    });
-
-    return this.invitedUserRepository.save(pendingUser);
   }
 
   //..register invited user...///
@@ -55,7 +105,6 @@ export class UserRepository {
     invitationData: string,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
-
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -65,12 +114,16 @@ export class UserRepository {
         where: { id: invitationData },
         relations: ['departments', 'shifts'],
       });
-
+      
       if (!pendingUser) {
         throw new NotFoundException('Invitation not found or already used');
       }
 
-      // 2. Create user entity (NO relations here)
+      console.log('Pending User:', pendingUser);
+      console.log('Departments:', pendingUser.departments);
+      console.log('Shifts:', pendingUser.shifts);
+
+      // 2. Create user with all data including relations
       const newUser = queryRunner.manager.create(User, {
         company_id: pendingUser.company_id,
         user_name: invitedUserRegDto.user_name,
@@ -79,37 +132,31 @@ export class UserRepository {
         profile_uri: invitedUserRegDto.profile_uri,
         bio: invitedUserRegDto.bio,
         role: pendingUser.role,
+        departments: pendingUser.departments,  // Copy relations
+        shifts: pendingUser.shifts,            // Copy relations
       });
 
-      // 3. Save user first
+      // 3. Save user (cascade will handle join tables)
       const savedUser = await queryRunner.manager.save(User, newUser);
+      console.log('Saved User ID:', savedUser.id);
 
-      // 4. Attach departments (join table insert)
-      if (pendingUser.departments?.length) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .relation(User, 'departments')
-          .of(savedUser.id)
-          .add(pendingUser.departments.map(dep => dep.id));
-      }
-
-      // 5. Attach shifts (join table insert)
-      if (pendingUser.shifts?.length) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .relation(User, 'shifts')
-          .of(savedUser.id)
-          .add(pendingUser.shifts.map(shift => shift.id));
-      }
-
-      // 6. Remove pending user
+      // 4. Remove pending user
       await queryRunner.manager.remove(PendingUser, pendingUser);
 
-      // 7. Commit transaction
+      // 5. Commit transaction
       await queryRunner.commitTransaction();
 
-      return savedUser;
+      // 6. Fetch complete user
+      const completeUser = await this.dataSource.manager.findOne(User, {
+        where: { id: savedUser.id },
+        relations: ['departments', 'shifts', 'company'],
+      });
+      
+      console.log('Complete User with relations:', completeUser);
+
+      return completeUser;
     } catch (err) {
+      console.error('Transaction error:', err);
       await queryRunner.rollbackTransaction();
       throw err;
     } finally {
@@ -117,40 +164,23 @@ export class UserRepository {
     }
   }
 
+  async getSocketEssentials(userId: string, companyId: string) {
+    try {
+      const departments = await this.userRepository
+        .createQueryBuilder('user')
+        .innerJoin('user.departments', 'dept')
+        .select([
+          'dept.id AS department_id',
+          'dept.department_name AS department_name'
+        ])
+        .where('user.id = :userId', { userId })
+        .andWhere('user.company_id = :companyId', { companyId })
+        .getRawMany();
 
-  //-----------------------------------------------------------------------------------------------///
-
-  // async findByEmail(email: string): Promise<User | null> {
-  //   return this.findOne({
-  //     where: { email },
-  //     relations: ['company']
-  //   });
-  // }
-
-  // async findByIdWithCompany(id: string): Promise<User | null> {
-  //   return this.findOne({
-  //     where: { id },
-  //     relations: ['company']
-  //   });
-  // }
-
-  // async findByIdWithDepartments(id: string): Promise<User | null> {
-  //   return this.findOne({
-  //     where: { id },
-  //     relations: ['userDepartments', 'userDepartments.department']
-  //   });
-  // }
-
-  // async findAllByCompany(company_id: string): Promise<User[]> {
-  //   return this.find({
-  //     where: { company_id },
-  //     relations: ['userDepartments', 'userDepartments.department'],
-  //     order: { createdDate: 'DESC' }
-  //   });
-  // }
-
-  // async existsByEmail(email: string): Promise<boolean> {
-  //   const count = await this.count({ where: { email } });
-  //   return count > 0;
-  // }
+      return departments;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
 }
