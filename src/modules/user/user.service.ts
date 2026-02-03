@@ -43,7 +43,7 @@ export class UserService {
       return savedInvitedUser.email
     }catch(err){
       console.log('error occured for sending mail',err)
-      throw new err
+      throw err
     }
   }
 
@@ -51,4 +51,9 @@ export class UserService {
   async registerInvitedUser(invitedUserRegDto:InvitedUserRegDto,invitationData:string){
     return this.userRepository.registerInvitedUser(invitedUserRegDto,invitationData)
   }
+
+  async getSocketEssentials(userId:string, companyId:string){
+      return this.userRepository.getSocketEssentials(userId,companyId)
+  }
+
 }

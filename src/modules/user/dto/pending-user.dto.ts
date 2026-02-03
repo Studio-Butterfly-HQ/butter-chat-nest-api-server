@@ -1,37 +1,23 @@
-// src/modules/user/dto/create-pending-user.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsUUID, MaxLength } from 'class-validator';
-import { UserRole } from '../entities/user.entity';
+// src/modules/user/dto/pending-user.dto.ts
+import { IsEmail, IsEnum, IsNotEmpty, IsArray, IsUUID } from 'class-validator';
+import { UserRole } from '../entities/pending-user.entity';
 
 export class PendingUserDto {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'john.doe@company.com',
-    maxLength: 50,
-  })
-  @IsNotEmpty()
   @IsEmail()
-  @MaxLength(50)
+  @IsNotEmpty()
   email: string;
 
-  @ApiProperty({
-    description: 'User role in the company',
-    enum: UserRole,
-    example: UserRole.EMPLOYEE,
-  })
-  @IsNotEmpty()
   @IsEnum(UserRole)
+  @IsNotEmpty()
   role: UserRole;
 
-  @ApiProperty({
-    description: 'Department ID to assign the user',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
+  @IsArray()
+  @IsUUID('4', { each: true })
   @IsNotEmpty()
-  @IsUUID()
-  department_id: string;
+  department_ids: string[];
 
+  @IsArray()
+  @IsUUID('4', { each: true })
   @IsNotEmpty()
-  @IsUUID()
-  shift_id: string;
+  shift_ids: string[];
 }

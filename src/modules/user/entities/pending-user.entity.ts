@@ -23,12 +23,6 @@ export enum UserRole {
   GUEST = 'GUEST'
 }
 
-export enum PendingUserStatus {
-  PENDING = 'PENDING',
-  INVITED = 'ACCEPTED',
-  EXPIRED = 'EXPIRED',
-}
-
 @Entity('pending_users')
 @Unique(['email', 'company_id'])
 @Index(['company_id'])
@@ -42,12 +36,6 @@ export class PendingUser extends MetaData {
   @Column({ type: 'uuid' })
   company_id: string;
 
-  @Column({ type: 'uuid' })
-  department_id: string;
-
-  @Column({ type: 'uuid' })
-  shift_id: string;
-
   @Column({
     type: 'enum',
     enum: UserRole,
@@ -59,12 +47,13 @@ export class PendingUser extends MetaData {
   company: Company;
   
   @ManyToMany(() => Department, department => department.pending_users, {
-      onDelete: 'CASCADE'
+    cascade: true,
+    onDelete: 'CASCADE'
   })
   @JoinTable({
     name: 'pending_user_departments',
     joinColumn: {
-      name: 'user_id',
+      name: 'pending_user_id',
       referencedColumnName: 'id'
     },
     inverseJoinColumn: {
@@ -74,21 +63,20 @@ export class PendingUser extends MetaData {
   })
   departments: Department[];
 
-    @ManyToMany(() => Shift, shift => shift.pending_users,{
-      //cascade: true,
-      onDelete: 'CASCADE'
-    })
-    @JoinTable({
-      name: 'pending_user_shifts',
-      joinColumn: {
-        name: 'user_id',
-        referencedColumnName: 'id'
-      },
-      inverseJoinColumn: {
-        name: 'shift_id',
-        referencedColumnName: 'id'
-      }
-    })
-    shifts: Shift[];
-  
+  @ManyToMany(() => Shift, shift => shift.pending_users, {
+    cascade: true,
+    onDelete: 'CASCADE'
+  })
+  @JoinTable({
+    name: 'pending_user_shifts',
+    joinColumn: {
+      name: 'pending_user_id',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'shift_id',
+      referencedColumnName: 'id'
+    }
+  })
+  shifts: Shift[];
 }

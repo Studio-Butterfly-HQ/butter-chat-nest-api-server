@@ -1,5 +1,5 @@
 // src/modules/user/entities/user.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Company } from '../../company/entities/company.entity';
 import { MetaData } from 'src/common/entity/meta-data';
 import { Shift } from 'src/modules/shift/entities/shift.entity';
@@ -47,7 +47,7 @@ export class User extends MetaData {
   @Column({
     type: 'enum',
     enum: UserRole,
-    nullable:false
+    nullable: false
   })
   role: UserRole;
 
@@ -63,8 +63,8 @@ export class User extends MetaData {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @ManyToMany(() => Shift, shift => shift.users,{
-    //cascade: true,
+  @ManyToMany(() => Shift, shift => shift.users, {
+    cascade: true,
     onDelete: 'CASCADE'
   })
   @JoinTable({
@@ -81,6 +81,7 @@ export class User extends MetaData {
   shifts: Shift[];
 
   @ManyToMany(() => Department, department => department.users, {
+    cascade: true,
     onDelete: 'CASCADE'
   })
   @JoinTable({
