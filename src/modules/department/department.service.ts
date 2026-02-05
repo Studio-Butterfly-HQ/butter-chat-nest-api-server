@@ -7,6 +7,11 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 @Injectable()
 export class DepartmentService {
   constructor(private readonly departmentRepository:DepartmentRepository){}
+  
+  departmentList(companyId: string){
+    this.departmentRepository.departmentList(companyId)
+  }
+  
   findAll(id:string) {
     return this.departmentRepository.findAll(id);
   }

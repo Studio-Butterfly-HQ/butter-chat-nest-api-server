@@ -8,6 +8,10 @@ export class ShiftService {
 
   constructor(private readonly shiftRepository: ShiftRepository){}
 
+  async shiftList(companyId: string) {
+    return this.shiftRepository.shiftList(companyId);
+  }
+
   create(companyId:string,createShiftDto: CreateShiftDto) {
     return this.shiftRepository.create(companyId,createShiftDto);
   }

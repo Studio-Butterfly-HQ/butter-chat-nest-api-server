@@ -12,6 +12,16 @@ export class ShiftRepository {
     private readonly repository: Repository<Shift>,
   ) {}
 
+  //find shift list 
+  async shiftList(companyId: string) {
+    const shifts = await this.repository.find({
+      where: { company_id: companyId },
+      select: ['id', 'shift_name'],
+      order: { createdDate: 'DESC' }
+    });
+
+    return shifts;
+  }
   /**
    * Find all shifts for a company with top 10 users (id, name and email only)
    */

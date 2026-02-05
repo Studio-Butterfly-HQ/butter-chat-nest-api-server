@@ -19,6 +19,8 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiInternalServerErrorResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { DepartmentService } from './department.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
@@ -33,6 +35,79 @@ import { ResponseUtil } from 'src/common/utils/response.util';
 @ApiBearerAuth('JWT-auth')
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
+
+    @Get('list')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get simple department list',
+    description: 'Retrieves a simple list of all departments for the company with only ID and name. Useful for dropdowns and quick references.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Department list retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'department list retrieved successfully',
+        data: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            department_name: 'Engineering'
+          },
+          {
+            id: '660e8400-e29b-41d4-a716-446655440111',
+            department_name: 'Marketing'
+          },
+          {
+            id: '770e8400-e29b-41d4-a716-446655440222',
+            department_name: 'Sales'
+          },
+          {
+            id: '880e8400-e29b-41d4-a716-446655440333',
+            department_name: 'Human Resources'
+          }
+        ],
+        timestamp: '2026-02-05T10:30:00.000Z'
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+    schema: {
+      example: {
+        success: false,
+        message: 'Unauthorized access',
+        error: {
+          code: 'UNAUTHORIZED',
+          details: 'Invalid or expired token'
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/department/list'
+      }
+    }
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+    schema: {
+      example: {
+        success: false,
+        message: 'Failed to retrieve department list',
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          details: 'An unexpected error occurred'
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/department/list'
+      }
+    }
+  })
+  async departmentList(@Req() req) {
+    const departments = await this.departmentService.departmentList(req.companyId);
+    return ResponseUtil.success('department list retrieved successfully', departments);
+  }
+
 
   @Get()
   @ApiOperation({
@@ -196,6 +271,7 @@ export class DepartmentController {
     const department = await this.departmentService.findOne(id, req.companyId);
     return ResponseUtil.success('Department retrieved successfully', department);
   }
+
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

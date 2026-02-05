@@ -12,6 +12,15 @@ export class DepartmentRepository {
     private readonly repository: Repository<Department>,
   ) {}
 
+  async departmentList(companyId: string) {
+    const departments = await this.repository.find({
+      where: { company_id: companyId },
+      select: ['id', 'department_name'],
+      order: { createdDate: 'DESC' }
+    });
+
+    return departments;
+  }
   /**
    * Find all departments for a company with top 10 users (name and email only)
    */

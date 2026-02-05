@@ -28,7 +28,7 @@ import {
   ApiInternalServerErrorResponse
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { ApiResponse } from 'src/common/interface/api-response.interface';
+import { ResponseUtil } from 'src/common/utils/response.util';
 
 @ApiTags('Shifts')
 @Controller('shift')
@@ -71,8 +71,8 @@ export class ShiftController {
           shift_start_time: '09:00:00',
           shift_end_time: '17:00:00',
           company_id: '550e8400-e29b-41d4-a716-446655440000',
-          created_date: '2024-01-26T10:30:00.000Z',
-          updated_date: '2024-01-26T10:30:00.000Z'
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T10:30:00.000Z'
         },
         timestamp: '2024-01-26T10:30:00.000Z'
       }
@@ -86,7 +86,7 @@ export class ShiftController {
         message: 'Shift end time must be after start time',
         error: {
           code: 'BAD_REQUEST',
-          details: null
+          details: 'End time must be after start time'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift'
@@ -101,7 +101,7 @@ export class ShiftController {
         message: 'Shift with this name already exists',
         error: {
           code: 'CONFLICT',
-          details: null
+          details: 'A shift with this name already exists in the company'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift'
@@ -123,16 +123,64 @@ export class ShiftController {
       }
     }
   })
-  async create(@Req() req, @Body() createShiftDto: CreateShiftDto): Promise<ApiResponse> {
-    const companyId = req.companyId;
-    const shift = await this.shiftService.create(companyId, createShiftDto);
-    
-    return {
-      success: true,
-      message: 'Shift created successfully',
-      data: shift,
-      timestamp: new Date().toISOString()
-    };
+  async create(@Req() req, @Body() createShiftDto: CreateShiftDto) {
+    const shift = await this.shiftService.create(req.companyId, createShiftDto);
+    return ResponseUtil.created('Shift created successfully', shift);
+  }
+
+  @Get('list')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get simple shift list',
+    description: 'Retrieves a simple list of all shifts for the company with only ID and name. Useful for dropdowns and quick references.'
+  })
+  @SwaggerApiResponse({
+    status: HttpStatus.OK,
+    description: 'Shift list retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'shift list retrieved successfully',
+        data: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            shift_name: 'Morning Shift'
+          },
+          {
+            id: '660e8400-e29b-41d4-a716-446655440111',
+            shift_name: 'Evening Shift'
+          },
+          {
+            id: '770e8400-e29b-41d4-a716-446655440222',
+            shift_name: 'Night Shift'
+          },
+          {
+            id: '880e8400-e29b-41d4-a716-446655440333',
+            shift_name: 'Weekend Shift'
+          }
+        ],
+        timestamp: '2026-02-05T10:30:00.000Z'
+      }
+    }
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+    schema: {
+      example: {
+        success: false,
+        message: 'Failed to retrieve shift list',
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          details: 'An unexpected error occurred'
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/shift/list'
+      }
+    }
+  })
+  async shiftList(@Req() req) {
+    const shifts = await this.shiftService.shiftList(req.companyId);
+    return ResponseUtil.success('shift list retrieved successfully', shifts);
   }
 
   @Get()
@@ -155,8 +203,8 @@ export class ShiftController {
             shift_start_time: '09:00:00',
             shift_end_time: '17:00:00',
             company_id: '550e8400-e29b-41d4-a716-446655440000',
-            created_date: '2024-01-26T10:30:00.000Z',
-            updated_date: '2024-01-26T10:30:00.000Z',
+            createdDate: '2024-01-26T10:30:00.000Z',
+            updatedDate: '2024-01-26T10:30:00.000Z',
             users: [
               {
                 id: 'user-uuid-1',
@@ -190,16 +238,9 @@ export class ShiftController {
       }
     }
   })
-  async findAll(@Req() req): Promise<ApiResponse> {
-    const companyId = req.companyId;
-    const shifts = await this.shiftService.findAll(companyId);
-    
-    return {
-      success: true,
-      message: 'Shifts retrieved successfully',
-      data: shifts,
-      timestamp: new Date().toISOString()
-    };
+  async findAll(@Req() req) {
+    const shifts = await this.shiftService.findAll(req.companyId);
+    return ResponseUtil.success('Shifts retrieved successfully', shifts);
   }
 
   @Get(':id')
@@ -227,8 +268,8 @@ export class ShiftController {
           shift_start_time: '09:00:00',
           shift_end_time: '17:00:00',
           company_id: '550e8400-e29b-41d4-a716-446655440000',
-          created_date: '2024-01-26T10:30:00.000Z',
-          updated_date: '2024-01-26T10:30:00.000Z',
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T10:30:00.000Z',
           users: [
             {
               id: 'user-uuid-1',
@@ -254,7 +295,7 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: null
+          details: 'The requested shift does not exist'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -276,16 +317,9 @@ export class ShiftController {
       }
     }
   })
-  async findOne(@Req() req, @Param('id', ParseUUIDPipe) id: string): Promise<ApiResponse> {
-    const companyId = req.companyId;
-    const shift = await this.shiftService.findOne(id, companyId);
-    
-    return {
-      success: true,
-      message: 'Shift retrieved successfully',
-      data: shift,
-      timestamp: new Date().toISOString()
-    };
+  async findOne(@Req() req, @Param('id', ParseUUIDPipe) id: string) {
+    const shift = await this.shiftService.findOne(id, req.companyId);
+    return ResponseUtil.success('Shift retrieved successfully', shift);
   }
 
   @Patch(':id')
@@ -313,8 +347,8 @@ export class ShiftController {
           shift_start_time: '08:00:00',
           shift_end_time: '16:00:00',
           company_id: '550e8400-e29b-41d4-a716-446655440000',
-          created_date: '2024-01-26T10:30:00.000Z',
-          updated_date: '2024-01-26T11:45:00.000Z'
+          createdDate: '2024-01-26T10:30:00.000Z',
+          updatedDate: '2024-01-26T11:45:00.000Z'
         },
         timestamp: '2024-01-26T11:45:00.000Z'
       }
@@ -328,7 +362,7 @@ export class ShiftController {
         message: 'Shift end time must be after start time',
         error: {
           code: 'BAD_REQUEST',
-          details: null
+          details: 'End time must be after start time'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -343,7 +377,7 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: null
+          details: 'The requested shift does not exist'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -358,7 +392,7 @@ export class ShiftController {
         message: 'Shift with this name already exists',
         error: {
           code: 'CONFLICT',
-          details: null
+          details: 'A shift with this name already exists in the company'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -380,16 +414,9 @@ export class ShiftController {
       }
     }
   })
-  async update(@Req() req, @Param('id', ParseUUIDPipe) id: string, @Body() updateShiftDto: UpdateShiftDto): Promise<ApiResponse> {
-    const companyId = req.companyId;
-    const shift = await this.shiftService.update(id,companyId,updateShiftDto);
-    
-    return {
-      success: true,
-      message: 'Shift updated successfully',
-      data: shift,
-      timestamp: new Date().toISOString()
-    };
+  async update(@Req() req, @Param('id', ParseUUIDPipe) id: string, @Body() updateShiftDto: UpdateShiftDto) {
+    const shift = await this.shiftService.update(id, req.companyId, updateShiftDto);
+    return ResponseUtil.success('Shift updated successfully', shift);
   }
 
   @Delete(':id')
@@ -427,7 +454,7 @@ export class ShiftController {
         message: 'Shift not found',
         error: {
           code: 'NOT_FOUND',
-          details: null
+          details: 'The requested shift does not exist'
         },
         timestamp: '2024-01-26T10:30:00.000Z',
         path: '/shift/123e4567-e89b-12d3-a456-426614174000'
@@ -449,15 +476,8 @@ export class ShiftController {
       }
     }
   })
-  async remove(@Req() req, @Param('id', ParseUUIDPipe) id: string): Promise<ApiResponse> {
-    const companyId = req.companyId;
-    const result = await this.shiftService.remove(id, companyId);
-    
-    return {
-      success: true,
-      message: 'Shift deleted successfully',
-      data: result,
-      timestamp: new Date().toISOString()
-    };
+  async remove(@Req() req, @Param('id', ParseUUIDPipe) id: string) {
+    const result = await this.shiftService.remove(id, req.companyId);
+    return ResponseUtil.success('Shift deleted successfully', result);
   }
 }
