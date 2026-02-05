@@ -8,8 +8,8 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 export class DepartmentService {
   constructor(private readonly departmentRepository:DepartmentRepository){}
   
-  departmentList(companyId: string){
-    this.departmentRepository.departmentList(companyId)
+  async departmentList(companyId: string){
+    return this.departmentRepository.departmentList(companyId)
   }
   
   findAll(id:string) {

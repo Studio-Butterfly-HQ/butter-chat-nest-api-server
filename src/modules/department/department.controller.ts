@@ -36,7 +36,7 @@ import { ResponseUtil } from 'src/common/utils/response.util';
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 
-    @Get('list')
+  @Get('list')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
