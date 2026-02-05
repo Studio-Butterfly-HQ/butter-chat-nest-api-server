@@ -3,7 +3,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { DataSource, Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PendingUser } from './entities/pending-user.entity';
+import { PendingUser, UserRole } from './entities/pending-user.entity';
 import { PendingUserDto } from './dto/pending-user.dto';
 import { InvitedUserRegDto } from './dto/invited-registration.dto';
 import { Department } from '../department/entities/department.entity';
@@ -78,7 +78,7 @@ export class UserRepository {
       // Create pending user with relations
       const pendingUser = queryRunner.manager.create(PendingUser, {
         email: pendingUserDto.email,
-        role: pendingUserDto.role,
+        role: UserRole.EMPLOYEE,
         company_id: companyId,
         departments,  // Assign the actual entities
         shifts,       // Assign the actual entities
@@ -180,6 +180,43 @@ export class UserRepository {
       return departments;
     } catch (err) {
       console.error(err);
+      throw err;
+    }
+  }
+
+  async getUserListWithDepartments(companyId: string) {
+    try {
+      const users = await this.userRepository.find({
+        where: { company_id: companyId },
+        relations: ['departments'],
+        select: {
+          id: true,
+          user_name: true,
+          email: true,
+          profile_uri: true,
+          role: true,
+          status: true,
+        },
+        order: {
+          createdDate: 'DESC'
+        }
+      });
+
+      // Transform the response to match the required format
+      return users.map(user => ({
+        id: user.id,
+        user_name: user.user_name,
+        email: user.email,
+        avatar: user.profile_uri,
+        role: user.role,
+        status: user.status,
+        departments: user.departments.map(dept => ({
+          id: dept.id,
+          department_name: dept.department_name
+        }))
+      }));
+    } catch (err) {
+      console.error('Error fetching user list:', err);
       throw err;
     }
   }

@@ -26,34 +26,38 @@ export class UserService {
 
   ) {}
 
-  async InviteUser(inviteUser: PendingUserDto,companyId:string){
-    try{
-      let savedInvitedUser = await this.userRepository.saveInvitedUser(inviteUser,companyId)
+  async InviteUser(inviteUser: PendingUserDto, companyId: string) {
+    try {
+      let savedInvitedUser = await this.userRepository.saveInvitedUser(inviteUser, companyId);
       const payload = {
         sub: savedInvitedUser.id,
       };
-      console.log(savedInvitedUser,"saved user info up")
+      console.log(savedInvitedUser, "saved user info up");
       let invitationToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
       this.mailService.sendInvitationEmail(
         savedInvitedUser.email,
         invitationToken,
         'Studio Butterfly'
-      )
-      return savedInvitedUser.email
-    }catch(err){
-      console.log('error occured for sending mail',err)
-      throw err
+      );
+      return savedInvitedUser.email;
+    } catch (err) {
+      console.log('error occured for sending mail', err);
+      throw err;
     }
   }
 
   //register invited user 
-  async registerInvitedUser(invitedUserRegDto:InvitedUserRegDto,invitationData:string){
-    return this.userRepository.registerInvitedUser(invitedUserRegDto,invitationData)
+  async registerInvitedUser(invitedUserRegDto: InvitedUserRegDto, invitationData: string) {
+    return this.userRepository.registerInvitedUser(invitedUserRegDto, invitationData);
   }
 
-  async getSocketEssentials(userId:string, companyId:string){
-      return this.userRepository.getSocketEssentials(userId,companyId)
+  async getSocketEssentials(userId: string, companyId: string) {
+    return this.userRepository.getSocketEssentials(userId, companyId);
+  }
+
+  async getUserListWithDepartments(companyId: string) {
+    return this.userRepository.getUserListWithDepartments(companyId);
   }
 
 }
