@@ -16,6 +16,6 @@ export class FileHandleService {
 
     //writeFileSync(filePath, file.buffer);
 
-    return `http://localhost:5599/public/avatars/${filename}`;
+    return `https://api.studiobutterfly.io/public/avatars/${filename}`;
   }
 }
