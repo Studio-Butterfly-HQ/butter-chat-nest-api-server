@@ -31,6 +31,7 @@ import { WeburiResourcesModule } from './weburi-resources/weburi-resources.modul
 import { WeburiResource } from './weburi-resources/entities/weburi-resource.entity';
 import { AiAgent } from './modules/ai-agents/entities/ai-agent.entity';
 import { AiAgentsModule } from './modules/ai-agents/ai-agents.module';
+import { SocialConnectionModule } from './modules/social_connection_module/social-connection.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { AiAgentsModule } from './modules/ai-agents/ai-agents.module';
     MetaBusinessModule,
     ShiftModule,
     WeburiResourcesModule,
+    SocialConnectionModule
   ],
   controllers: [],
   providers: [],
