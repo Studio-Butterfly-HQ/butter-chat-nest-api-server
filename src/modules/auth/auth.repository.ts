@@ -101,15 +101,17 @@ export class AuthRepository {
 
   async login(loginDto: LoginAuthDto) {
     // Find user by email with company relation
-    const user = await this.userRepository.findOne({
-      where: { email: loginDto.email },
-      relations: ['company']
-    });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password') // include password explicitly
+      .where('user.email = :email', { email: loginDto.email })
+      .getOne();
+
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Verify password
+    // // Verify password
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password

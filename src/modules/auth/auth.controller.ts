@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login.dto';
 import { RegisterCompanyDto } from './dto/registration.dto';
 import { ResponseUtil } from '../../common/utils/response.util';
-import { Response } from 'express';
 
 @ApiTags('auth')
 @Controller('auth')

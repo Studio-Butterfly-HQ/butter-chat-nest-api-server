@@ -37,7 +37,7 @@ export class AuthService {
   async login(loginDto: LoginAuthDto) {
     try {
       let result = await this.authRepository.login(loginDto);
-      
+
       const payload = {
         sub: result.user.id,
         companyId: result.user.company_id,
