@@ -28,6 +28,7 @@ import { PendingUserDto } from './dto/pending-user.dto';
 import { InvitedUserRegDto } from './dto/invited-registration.dto';
 import { InvitedUserRegGuard } from './guards/invited-user-reg.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-pass-dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -485,7 +486,10 @@ export class UserController {
     return ResponseUtil.success("retrieved successful", res, "user/profile");
   }
 
+  //update profile data
   @Patch('/profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update user profile',
@@ -510,4 +514,36 @@ export class UserController {
       'users/profile',
     );
   }
+
+  /**
+   * PATCH /users/profile/password
+   * Update logged-in user password
+   */
+  @Patch('/profile/password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update user password',
+    description: 'Update logged-in user password',
+  })
+  async updatePassword(
+    @Req() req,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    const userId = req.user.userId;
+    const companyId = req.user.companyId;
+
+    const result = await this.userService.updatePasswordById(
+      userId,
+      companyId,
+      updatePasswordDto,
+    );
+     return ResponseUtil.success(
+      'password updated successfully',
+      result,
+      'users/profile/password',
+    );
+  }
+
 }
