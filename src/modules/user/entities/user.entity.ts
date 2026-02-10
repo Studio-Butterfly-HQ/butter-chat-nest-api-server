@@ -32,7 +32,7 @@ export class User extends MetaData {
   @Column({ length: 50, unique: true })
   email: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255 ,select:false})
   password: string;
 
   @Column({ length: 255, nullable: true })
@@ -41,7 +41,7 @@ export class User extends MetaData {
   @Column({ length: 255, nullable: true })
   bio: string;
 
-  @Column({ name: 'refresh_token', nullable: true })
+  @Column({ name: 'refresh_token', nullable: true,select:false })
   refresh_token: string;
 
   @Column({

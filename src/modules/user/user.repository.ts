@@ -1,5 +1,5 @@
 // src/modules/user/user.repository.ts
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,8 @@ import { InvitedUserRegDto } from './dto/invited-registration.dto';
 import { Department } from '../department/entities/department.entity';
 import { Shift } from '../shift/entities/shift.entity';
 import * as bcrypt from 'bcrypt';
+import { UpdatePasswordDto } from './dto/update-pass-dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -164,6 +166,7 @@ export class UserRepository {
     }
   }
 
+  //for socket server
   async getSocketEssentials(userId: string, companyId: string) {
     try {
       const departments = await this.userRepository
@@ -220,4 +223,71 @@ export class UserRepository {
       throw err;
     }
   }
+
+  async getUserInfoById(userId: string, companyId: string) {
+    const user = await this.userRepository.findOneBy({
+      id: userId,
+      company_id:companyId,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateUserById(
+    userId: string,
+    companyId: string,
+    updateUserDto: UpdateUserDto,
+  ) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId, company_id: companyId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    Object.assign(user, updateUserDto);
+
+    await this.userRepository.save(user);
+    // password & refresh_token excluded by select:false
+    return this.getUserInfoById(userId, companyId);
+  }
+
+
+    async updatePasswordById(
+    userId: string,
+    companyId: string,
+    dto: UpdatePasswordDto,
+  ) {
+    // Explicitly fetch password (select:false override)
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :userId', { userId })
+      .andWhere('user.company_id = :companyId', { companyId })
+      .getOne();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Compare old password
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    // Hash & update new password
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.userRepository.save(user);
+
+    return { message: 'Password updated successfully' };
+  }
+
+
 }

@@ -7,7 +7,8 @@ import {
   HttpStatus, 
   UseGuards, 
   Get, 
-  Req 
+  Req, 
+  Patch
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { PendingUserDto } from './dto/pending-user.dto';
 import { InvitedUserRegDto } from './dto/invited-registration.dto';
 import { InvitedUserRegGuard } from './guards/invited-user-reg.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -251,6 +253,7 @@ export class UserController {
     return ResponseUtil.success("registration successful", res);
   }
 
+  //user list with dept
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -409,5 +412,102 @@ export class UserController {
     const res = await this.userService.getSocketEssentials(userId, companyId);
     const socketEssential = { userId, companyId, departments: res };
     return ResponseUtil.success("retrieved successful", socketEssential, "/socket/essential");
+  }
+
+  @Get('/profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Get user profile',
+    description: ''
+  })
+  @SwaggerApiResponse({ 
+    status: HttpStatus.OK, 
+    schema: {
+      example: {
+        success: true,
+        message: 'retrieved successful',
+        data: {
+          userId: '874d9777-3361-44ac-95ea-607e032e54bf',
+          companyId: '76b8acd6-7796-445d-84be-d83c12a22318',
+          departments: [
+            {
+              department_id: 'dept-uuid-1',
+              department_name: 'Engineering'
+            },
+            {
+              department_id: 'dept-uuid-2',
+              department_name: 'Marketing'
+            }
+          ]
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/socket/essential'
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ 
+    description: 'Unauthorized - Invalid or missing JWT token',
+    schema: {
+      example: {
+        success: false,
+        message: 'Unauthorized access',
+        error: {
+          code: 'UNAUTHORIZED',
+          details: 'Invalid or expired token'
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/users/socket/essential'
+      }
+    }
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error',
+    schema: {
+      example: {
+        success: false,
+        message: 'Failed to retrieve socket essentials',
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          details: 'An unexpected error occurred'
+        },
+        timestamp: '2026-02-05T10:30:00.000Z',
+        path: '/users/socket/essential'
+      }
+    }
+  })
+  //user by id
+  async getUserInfoById(@Req() req) {
+    const userId = req.user.userId;
+    const companyId = req.user.companyId;
+    const res = await this.userService.getUserInfoById(userId, companyId);
+    return ResponseUtil.success("retrieved successful", res, "user/profile");
+  }
+
+  @Patch('/profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update user profile',
+    description: 'Update logged-in user profile (excluding password)',
+  })
+  async updateProfile(
+    @Req() req,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = req.user.userId;
+    const companyId = req.user.companyId;
+
+    const result = await this.userService.updateUserById(
+      userId,
+      companyId,
+      updateUserDto,
+    );
+
+    return ResponseUtil.success(
+      'profile updated successfully',
+      result,
+      'users/profile',
+    );
   }
 }

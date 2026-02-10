@@ -1,29 +1,19 @@
 // src/modules/user/user.service.ts
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { Injectable} from '@nestjs/common';
 import { UserRepository } from './user.repository';
-import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entities/user.entity';
-import { UserDepartment } from '../user-department/entities/user-department.entity';
-import { Department } from '../department/entities/department.entity';
-import { Company } from '../company/entities/company.entity';
-import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { MailService } from '../mail/mail.service';
 import { PendingUserDto } from './dto/pending-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { InvitedUserRegDto } from './dto/invited-registration.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-pass-dto';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly dataSource: DataSource,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService
-
   ) {}
 
   async InviteUser(inviteUser: PendingUserDto, companyId: string) {
@@ -60,4 +50,14 @@ export class UserService {
     return this.userRepository.getUserListWithDepartments(companyId);
   }
 
+  async getUserInfoById(userId: string, companyId: string) {
+    return this.userRepository.getUserInfoById(userId,companyId)
+  }
+
+  async updateUserById(userId: string, companyId: string,udateUserDto: UpdateUserDto) {
+    return this.userRepository.updateUserById(userId,companyId, udateUserDto)
+  }
+  async updatePasswordById(userId: string, companyId: string,udatePasswordDto: UpdatePasswordDto) {
+    return this.userRepository.updatePasswordById(userId,companyId, udatePasswordDto)
+  }
 }
