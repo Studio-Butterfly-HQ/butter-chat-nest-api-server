@@ -32,6 +32,8 @@ import { WeburiResource } from './weburi-resources/entities/weburi-resource.enti
 import { AiAgent } from './modules/ai-agents/entities/ai-agent.entity';
 import { AiAgentsModule } from './modules/ai-agents/ai-agents.module';
 import { SocialConnectionModule } from './modules/social_connection_module/social-connection.module';
+import { CustomerModule } from './modules/customer-module/customer.module';
+import { Customer } from './modules/customer-module/entities/customer.entity';
 
 @Module({
   imports: [
@@ -55,7 +57,7 @@ import { SocialConnectionModule } from './modules/social_connection_module/socia
           Company,User,Department,PasswordResetToken,
           Conversation,Message,ConversationTag,ConversationSummary,
           SocialConnection,PendingUser,Shift,WeburiResource,
-          AiAgent
+          AiAgent,Customer
         ],
         synchronize:true,
          //logging:true
@@ -80,7 +82,8 @@ import { SocialConnectionModule } from './modules/social_connection_module/socia
     MetaBusinessModule,
     ShiftModule,
     WeburiResourcesModule,
-    SocialConnectionModule
+    SocialConnectionModule,
+    CustomerModule
   ],
   controllers: [],
   providers: [],

@@ -8,6 +8,7 @@ import { Shift } from 'src/modules/shift/entities/shift.entity';
 import { AiAgent } from 'src/modules/ai-agents/entities/ai-agent.entity';
 import { PendingUser } from 'src/modules/user/entities/pending-user.entity';
 import { WeburiResource } from 'src/weburi-resources/entities/weburi-resource.entity';
+import { Customer } from 'src/modules/customer-module/entities/customer.entity';
 
 export enum CompanyStatus {
   ACTIVE = 'ACTIVE',
@@ -77,4 +78,7 @@ export class Company extends MetaData {
 
   @OneToMany(() => AiAgent, (aiAgent) => aiAgent.company)
   ai_agents: AiAgent[];
+
+  @OneToMany(() => Customer, (customer) => customer.company)
+  customers: Customer[];
 }
