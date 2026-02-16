@@ -12,6 +12,23 @@ export class CustomerRepository extends Repository<Customer> {
     super(Customer, dataSource.createEntityManager());
   }
 
+  async customerList(companyId: string): Promise<Customer[]> {
+    return await this.find({
+      where: { company_id: companyId },
+      select: [
+        'id',
+        'company_id',
+        'name',
+        'profile_uri',
+        'contact',
+        'source',
+        'conversation_count',
+        'createdDate',
+        'updatedDate'
+      ]
+    });
+  }
+
   /**
    * Find a customer by ID
    * @param id - Customer UUID

@@ -28,6 +28,10 @@ export class CustomerService {
     private readonly configService: ConfigService
   ) {}
 
+  async customerListByCompanyId(companyId){
+    return await this.customerRepository.customerList(companyId)
+  }
+
   /**
    * Register a new customer
    * @param registerDto - Registration data

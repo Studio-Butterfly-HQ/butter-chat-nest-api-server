@@ -27,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { CustomerJwtAuthGuard } from './guards/customer-jwt-auth.guard';
 import { ResponseUtil } from 'src/common/utils/response.util';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 /**
  * Customer Controller
@@ -469,5 +470,15 @@ export class CustomerController {
   async deleteAccount(@Req() req) {
     await this.customerService.deleteCustomer(req.customerId, req.companyId);
     return ResponseUtil.noContent('Account deleted successfully');
+  }
+
+  @Get('list')
+  @UseGuards(JwtAuthGuard)
+  //@ApiBearerAuth('jwt')
+  @HttpCode(HttpStatus.OK)
+  async customerList(@Req() req){
+    let companyId = req.companyId;
+    const result = await this.customerService.customerListByCompanyId(companyId)
+    return ResponseUtil.success('customer list',result,"customer/list")
   }
 }
